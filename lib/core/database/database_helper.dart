@@ -15,6 +15,8 @@ class DatabaseHelper {
 
   /// Opens an in-memory database for widget/unit tests.
   static Future<void> initializeForTesting() async {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
     _db = await openDatabase(
       inMemoryDatabasePath,
       version: 1,
