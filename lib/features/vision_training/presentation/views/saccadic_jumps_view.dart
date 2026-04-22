@@ -22,7 +22,7 @@ class SaccadicJumpsView extends ConsumerWidget {
 // Exercise area — only rebuilds when position changes
 // ---------------------------------------------------------------------------
 class _ExerciseArea extends ConsumerWidget {
-  const _ExerciseArea({super.key});
+  const _ExerciseArea();
 
   static const _symbols = ['●', 'A', '◆', 'X', '▲', 'Z', '■', 'O'];
   static int _symbolIndex = 0;
