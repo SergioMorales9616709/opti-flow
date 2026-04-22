@@ -2,7 +2,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'database_helper.dart';
 
-class ProgressRepository {
+abstract interface class ProgressRepository {
+  Future<void> saveProgress({
+    required String exerciseType,
+    required int maxSpeedMs,
+  });
+}
+
+class ProgressRepositoryImpl implements ProgressRepository {
+  @override
   Future<void> saveProgress({
     required String exerciseType,
     required int maxSpeedMs,
@@ -16,5 +24,5 @@ class ProgressRepository {
 }
 
 final progressRepositoryProvider = Provider<ProgressRepository>(
-  (_) => ProgressRepository(),
+  (_) => ProgressRepositoryImpl(),
 );

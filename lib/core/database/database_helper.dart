@@ -10,8 +10,13 @@ class DatabaseHelper {
       sqfliteFfiInit();
       databaseFactory = databaseFactoryFfi;
     }
+    _db = await openDatabase('optiflow.db', version: 1, onCreate: _onCreate);
+  }
+
+  /// Opens an in-memory database for widget/unit tests.
+  static Future<void> initializeForTesting() async {
     _db = await openDatabase(
-      'optiflow.db',
+      inMemoryDatabasePath,
       version: 1,
       onCreate: _onCreate,
     );
