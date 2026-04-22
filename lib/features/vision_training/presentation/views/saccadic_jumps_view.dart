@@ -8,16 +8,12 @@ class SaccadicJumpsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return Column(
-          children: [
-            _ExerciseArea(availableHeight: constraints.maxHeight * 0.65),
-            const Divider(height: 1, color: Color(0xFF2A2A2A)),
-            const _ControlPanel(),
-          ],
-        );
-      },
+    return Column(
+      children: [
+        const Expanded(child: _ExerciseArea()),
+        const Divider(height: 1, color: Color(0xFF2A2A2A)),
+        const _ControlPanel(),
+      ],
     );
   }
 }
@@ -26,61 +22,50 @@ class SaccadicJumpsView extends ConsumerWidget {
 // Exercise area — only rebuilds when position changes
 // ---------------------------------------------------------------------------
 class _ExerciseArea extends ConsumerWidget {
-  const _ExerciseArea({required this.availableHeight});
-
-  final double availableHeight;
+  const _ExerciseArea({super.key});
 
   static const _symbols = ['●', 'A', '◆', 'X', '▲', 'Z', '■', 'O'];
   static int _symbolIndex = 0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final position = ref.watch(
-      saccadicJumpsProvider.select((s) => s.position),
-    );
-    final status = ref.watch(
-      saccadicJumpsProvider.select((s) => s.status),
-    );
+    final position = ref.watch(saccadicJumpsProvider.select((s) => s.position));
+    final status = ref.watch(saccadicJumpsProvider.select((s) => s.status));
 
     final bool isActive = status == ExerciseStatus.active;
-    final String symbol = isActive ? _symbols[_symbolIndex % _symbols.length] : '●';
+    final String symbol = isActive
+        ? _symbols[_symbolIndex % _symbols.length]
+        : '●';
     if (isActive) _symbolIndex++;
 
-    return SizedBox(
-      height: availableHeight,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // Center crosshair guide
-          Center(
-            child: Container(
-              width: 1,
-              height: availableHeight * 0.5,
-              color: const Color(0xFF1A1A1A),
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Center crosshair guide — 50% of available height via fraction
+        Center(
+          child: FractionallySizedBox(
+            heightFactor: 0.5,
+            child: Container(width: 1, color: const Color(0xFF1A1A1A)),
+          ),
+        ),
+        // Animated stimulus
+        AnimatedAlign(
+          duration: const Duration(milliseconds: 80),
+          alignment: position == StimulusPosition.left
+              ? const Alignment(-0.88, 0)
+              : const Alignment(0.88, 0),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 60),
+            child: _StimulusWidget(
+              key: ValueKey('$symbol$position'),
+              symbol: symbol,
+              active: isActive,
             ),
           ),
-          // Animated stimulus
-          AnimatedAlign(
-            duration: const Duration(milliseconds: 80),
-            alignment: position == StimulusPosition.left
-                ? const Alignment(-0.88, 0)
-                : const Alignment(0.88, 0),
-            child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 60),
-              child: _StimulusWidget(
-                key: ValueKey('$symbol$position'),
-                symbol: symbol,
-                active: isActive,
-              ),
-            ),
-          ),
-          // Overlay when idle
-          if (status == ExerciseStatus.idle)
-            const _IdleOverlay(),
-          if (status == ExerciseStatus.saved)
-            const _SavedOverlay(),
-        ],
-      ),
+        ),
+        if (status == ExerciseStatus.idle) const _IdleOverlay(),
+        if (status == ExerciseStatus.saved) const _SavedOverlay(),
+      ],
     );
   }
 }
@@ -106,9 +91,7 @@ class _StimulusWidget extends StatelessWidget {
             ? const Color(0xFF00E5FF).withValues(alpha: 0.12)
             : Colors.transparent,
         border: Border.all(
-          color: active
-              ? const Color(0xFF00E5FF)
-              : const Color(0xFF444444),
+          color: active ? const Color(0xFF00E5FF) : const Color(0xFF444444),
           width: 2,
         ),
       ),
@@ -118,9 +101,7 @@ class _StimulusWidget extends StatelessWidget {
         style: TextStyle(
           fontSize: 28,
           fontWeight: FontWeight.bold,
-          color: active
-              ? const Color(0xFF00E5FF)
-              : const Color(0xFF555555),
+          color: active ? const Color(0xFF00E5FF) : const Color(0xFF555555),
         ),
       ),
     );
@@ -138,11 +119,7 @@ class _IdleOverlay extends StatelessWidget {
       child: const Text(
         'Presiona INICIAR para comenzar\nel ejercicio de saltos sacádicos',
         textAlign: TextAlign.center,
-        style: TextStyle(
-          color: Colors.white54,
-          fontSize: 18,
-          height: 1.6,
-        ),
+        style: TextStyle(color: Colors.white54, fontSize: 18, height: 1.6),
       ),
     );
   }
@@ -217,7 +194,10 @@ class _ControlPanel extends ConsumerWidget {
           // Slider — inverted so right = faster (lower ms)
           Row(
             children: [
-              const Text('Lento', style: TextStyle(color: Colors.white38, fontSize: 12)),
+              const Text(
+                'Lento',
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
               Expanded(
                 child: Slider(
                   value: state.speedMs.toDouble(),
@@ -229,7 +209,10 @@ class _ControlPanel extends ConsumerWidget {
                       : (v) => notifier.setSpeed(v.round()),
                 ),
               ),
-              const Text('Rápido', style: TextStyle(color: Colors.white38, fontSize: 12)),
+              const Text(
+                'Rápido',
+                style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
             ],
           ),
           const SizedBox(height: 20),
