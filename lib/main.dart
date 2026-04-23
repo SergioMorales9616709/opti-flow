@@ -9,11 +9,7 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseHelper.initialize();
 
-  runApp(
-    const ProviderScope(
-      child: OptiFlowApp(),
-    ),
-  );
+  runApp(const ProviderScope(child: OptiFlowApp()));
 }
 
 class OptiFlowApp extends StatelessWidget {

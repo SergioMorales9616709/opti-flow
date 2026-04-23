@@ -116,5 +116,5 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
 
 final saccadicJumpsProvider =
     NotifierProvider<SaccadicJumpsNotifier, SaccadicJumpsState>(
-  SaccadicJumpsNotifier.new,
-);
+      SaccadicJumpsNotifier.new,
+    );

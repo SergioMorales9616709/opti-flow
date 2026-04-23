@@ -24,9 +24,7 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [
-          progressRepositoryProvider.overrideWithValue(fakeRepo),
-        ],
+        overrides: [progressRepositoryProvider.overrideWithValue(fakeRepo)],
         child: const OptiFlowApp(),
       ),
     );
