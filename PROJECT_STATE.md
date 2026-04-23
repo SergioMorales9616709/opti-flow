@@ -46,10 +46,16 @@ lib/
 
 ## Módulos
 
-### Módulo 1: Visión (MVP)
+### Módulo 1: Visión
 **Ejercicio: Saltos Sacádicos**
-- Mecánica: un símbolo/letra alterna entre el extremo izquierdo y derecho de la pantalla.
-- Control: Slider de velocidad (1000ms → 200ms por salto).
+- Patrones: Horizontal, Vertical, Patrón Z, Patrón N, Cruz, Diagonal X (enum `SaccadicPattern` en `domain/`).
+  - Horizontal/Vertical: convergencia wide → mid → narrow (6 posiciones).
+  - Patrón Z: top-left → top-right → bottom-left → bottom-right (4 posiciones).
+  - Patrón N: top-left → bottom-left → top-right → bottom-right (4 posiciones).
+  - Cruz: top → bottom → left → right (4 posiciones).
+  - Diagonal X: convergencia en ambas diagonales, wide → mid → narrow (12 posiciones).
+- Velocidad: 400 ms – 2000 ms por salto; valor por defecto 1200 ms.
+- Control: Slider de velocidad + `SegmentedButton` de selección de patrón.
 - Persistencia: guarda `max_speed_ms` al finalizar el ejercicio.
 
 ---
@@ -63,10 +69,12 @@ lib/
 | 3    | Capa de datos SQLite                         | ✅ Completado |
 | 4    | Ejercicio Saltos Sacádicos (VM + Vista)      | ✅ Completado |
 | 5    | Validación final (`flutter analyze`)         | ✅ Completado |
+| 6    | Refactorización: patrones múltiples sacádicos        | ✅ Completado |
 
 ---
 
-## MVP Módulo 1 — COMPLETADO ✅
+## Módulo 1 — Versión 3 ✅
 
-`flutter analyze` reporta **0 issues**.
-Fecha de cierre: 2026-04-15
+`flutter analyze` reporta **0 issues**. 19 tests pasando.
+Patrones soportados: Horizontal, Vertical, Z, N, Cruz, Diagonal X.
+Fecha: 2026-04-22

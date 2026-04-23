@@ -1,35 +1,45 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/database/progress_repository.dart';
-
-enum StimulusPosition { left, right }
+import '../../domain/saccadic_pattern.dart';
 
 enum ExerciseStatus { idle, active, saving, saved }
 
 class SaccadicJumpsState {
-  final StimulusPosition position;
+  final SaccadicPattern pattern;
+  final int stepIndex;
+  final int symbolIndex;
   final ExerciseStatus status;
   final int speedMs;
   final int minSpeedMs;
   final int maxSpeedMs;
 
   const SaccadicJumpsState({
-    required this.position,
+    required this.pattern,
+    required this.stepIndex,
+    required this.symbolIndex,
     required this.status,
     required this.speedMs,
     required this.minSpeedMs,
     required this.maxSpeedMs,
   });
 
+  Alignment get currentAlignment => pattern.sequence[stepIndex];
+
   SaccadicJumpsState copyWith({
-    StimulusPosition? position,
+    SaccadicPattern? pattern,
+    int? stepIndex,
+    int? symbolIndex,
     ExerciseStatus? status,
     int? speedMs,
   }) {
     return SaccadicJumpsState(
-      position: position ?? this.position,
+      pattern: pattern ?? this.pattern,
+      stepIndex: stepIndex ?? this.stepIndex,
+      symbolIndex: symbolIndex ?? this.symbolIndex,
       status: status ?? this.status,
       speedMs: speedMs ?? this.speedMs,
       minSpeedMs: minSpeedMs,
@@ -39,9 +49,9 @@ class SaccadicJumpsState {
 }
 
 class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
-  static const int _defaultSpeedMs = 800;
-  static const int _minSpeedMs = 200;
-  static const int _maxSpeedMs = 1000;
+  static const int _defaultSpeedMs = 1200;
+  static const int _minSpeedMs = 400;
+  static const int _maxSpeedMs = 2000;
 
   Timer? _timer;
 
@@ -49,12 +59,20 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
   SaccadicJumpsState build() {
     ref.onDispose(_cancelTimer);
     return const SaccadicJumpsState(
-      position: StimulusPosition.left,
+      pattern: SaccadicPattern.horizontal,
+      stepIndex: 0,
+      symbolIndex: 0,
       status: ExerciseStatus.idle,
       speedMs: _defaultSpeedMs,
       minSpeedMs: _minSpeedMs,
       maxSpeedMs: _maxSpeedMs,
     );
+  }
+
+  void setPattern(SaccadicPattern p) {
+    if (state.status != ExerciseStatus.idle) return;
+    // reset stepIndex to 0 — new pattern may have fewer steps than the current index
+    state = state.copyWith(pattern: p, stepIndex: 0);
   }
 
   void setSpeed(int ms) {
@@ -89,7 +107,9 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
   void reset() {
     _cancelTimer();
     state = const SaccadicJumpsState(
-      position: StimulusPosition.left,
+      pattern: SaccadicPattern.horizontal,
+      stepIndex: 0,
+      symbolIndex: 0,
       status: ExerciseStatus.idle,
       speedMs: _defaultSpeedMs,
       minSpeedMs: _minSpeedMs,
@@ -100,10 +120,10 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
   void _startTimer(int ms) {
     _cancelTimer();
     _timer = Timer.periodic(Duration(milliseconds: ms), (_) {
+      final seq = state.pattern.sequence;
       state = state.copyWith(
-        position: state.position == StimulusPosition.left
-            ? StimulusPosition.right
-            : StimulusPosition.left,
+        stepIndex: (state.stepIndex + 1) % seq.length,
+        symbolIndex: state.symbolIndex + 1,
       );
     });
   }

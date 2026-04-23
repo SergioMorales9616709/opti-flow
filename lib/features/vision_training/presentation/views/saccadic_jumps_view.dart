@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../domain/saccadic_pattern.dart';
 import '../viewmodels/saccadic_jumps_viewmodel.dart';
 
 class SaccadicJumpsView extends ConsumerWidget {
@@ -8,56 +9,51 @@ class SaccadicJumpsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
+    return const Column(
       children: [
-        const Expanded(child: _ExerciseArea()),
-        const Divider(height: 1, color: Color(0xFF2A2A2A)),
-        const _ControlPanel(),
+        Expanded(child: _ExerciseArea()),
+        Divider(height: 1, color: Color(0xFF2A2A2A)),
+        _PatternSelector(),
+        _ControlPanel(),
       ],
     );
   }
 }
 
 // ---------------------------------------------------------------------------
-// Exercise area — only rebuilds when position changes
+// Exercise area — rebuilds only when alignment or status changes
 // ---------------------------------------------------------------------------
 class _ExerciseArea extends ConsumerWidget {
   const _ExerciseArea();
 
   static const _symbols = ['●', 'A', '◆', 'X', '▲', 'Z', '■', 'O'];
-  static int _symbolIndex = 0;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final position = ref.watch(saccadicJumpsProvider.select((s) => s.position));
-    final status = ref.watch(saccadicJumpsProvider.select((s) => s.status));
+    final alignment = ref.watch(
+      saccadicJumpsProvider.select((s) => s.currentAlignment),
+    );
+    final status = ref.watch(
+      saccadicJumpsProvider.select((s) => s.status),
+    );
+    final symbolIndex = ref.watch(
+      saccadicJumpsProvider.select((s) => s.symbolIndex),
+    );
 
     final bool isActive = status == ExerciseStatus.active;
     final String symbol = isActive
-        ? _symbols[_symbolIndex % _symbols.length]
+        ? _symbols[symbolIndex % _symbols.length]
         : '●';
-    if (isActive) _symbolIndex++;
 
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Center crosshair guide — 50% of available height via fraction
-        Center(
-          child: FractionallySizedBox(
-            heightFactor: 0.5,
-            child: Container(width: 1, color: const Color(0xFF1A1A1A)),
-          ),
-        ),
-        // Animated stimulus
-        AnimatedAlign(
-          duration: const Duration(milliseconds: 80),
-          alignment: position == StimulusPosition.left
-              ? const Alignment(-0.88, 0)
-              : const Alignment(0.88, 0),
+        Align(
+          alignment: alignment,
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 60),
             child: _StimulusWidget(
-              key: ValueKey('$symbol$position'),
+              key: ValueKey('$symbol$alignment'),
               symbol: symbol,
               active: isActive,
             ),
@@ -153,26 +149,64 @@ class _SavedOverlay extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Control panel — speed slider + buttons
+// Pattern selector — SegmentedButton, only enabled when idle
+// ---------------------------------------------------------------------------
+class _PatternSelector extends ConsumerWidget {
+  const _PatternSelector();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pattern = ref.watch(
+      saccadicJumpsProvider.select((s) => s.pattern),
+    );
+    final status = ref.watch(
+      saccadicJumpsProvider.select((s) => s.status),
+    );
+    final notifier = ref.read(saccadicJumpsProvider.notifier);
+
+    final bool isSelectable = status == ExerciseStatus.idle;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
+      child: SegmentedButton<SaccadicPattern>(
+        segments: SaccadicPattern.values
+            .map((p) => ButtonSegment(value: p, label: Text(p.label)))
+            .toList(),
+        selected: {pattern},
+        onSelectionChanged:
+            isSelectable ? (s) => notifier.setPattern(s.first) : null,
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Control panel — speed slider + action buttons
 // ---------------------------------------------------------------------------
 class _ControlPanel extends ConsumerWidget {
   const _ControlPanel();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final state = ref.watch(saccadicJumpsProvider);
+    final status = ref.watch(saccadicJumpsProvider.select((s) => s.status));
+    final speedMs = ref.watch(saccadicJumpsProvider.select((s) => s.speedMs));
+    final minSpeedMs = ref.watch(
+      saccadicJumpsProvider.select((s) => s.minSpeedMs),
+    );
+    final maxSpeedMs = ref.watch(
+      saccadicJumpsProvider.select((s) => s.maxSpeedMs),
+    );
     final notifier = ref.read(saccadicJumpsProvider.notifier);
 
-    final bool isActive = state.status == ExerciseStatus.active;
-    final bool isSaving = state.status == ExerciseStatus.saving;
-    final bool isSaved = state.status == ExerciseStatus.saved;
+    final bool isActive = status == ExerciseStatus.active;
+    final bool isSaving = status == ExerciseStatus.saving;
+    final bool isSaved = status == ExerciseStatus.saved;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Speed label
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -181,7 +215,7 @@ class _ControlPanel extends ConsumerWidget {
                 style: TextStyle(fontSize: 15, color: Colors.white70),
               ),
               Text(
-                '${state.speedMs} ms / salto',
+                '$speedMs ms / salto',
                 style: const TextStyle(
                   fontSize: 15,
                   color: Color(0xFF00E5FF),
@@ -191,32 +225,30 @@ class _ControlPanel extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 8),
-          // Slider — inverted so right = faster (lower ms)
           Row(
             children: [
               const Text(
-                'Lento',
+                'Rápido',
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
               Expanded(
                 child: Slider(
-                  value: state.speedMs.toDouble(),
-                  min: state.minSpeedMs.toDouble(),
-                  max: state.maxSpeedMs.toDouble(),
-                  divisions: (state.maxSpeedMs - state.minSpeedMs) ~/ 50,
+                  value: speedMs.toDouble(),
+                  min: minSpeedMs.toDouble(),
+                  max: maxSpeedMs.toDouble(),
+                  divisions: (maxSpeedMs - minSpeedMs) ~/ 50,
                   onChanged: isSaving || isSaved
                       ? null
                       : (v) => notifier.setSpeed(v.round()),
                 ),
               ),
               const Text(
-                'Rápido',
+                'Lento',
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          // Buttons row
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
