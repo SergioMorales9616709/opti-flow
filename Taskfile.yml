@@ -1,0 +1,104 @@
+version: "3"
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list
+
+  # ─── Dependencies ───────────────────────────────────────────────────────────
+
+  get:
+    desc: Fetch / update Flutter dependencies
+    cmds:
+      - flutter pub get
+
+  upgrade:
+    desc: Upgrade Flutter dependencies to latest compatible versions
+    cmds:
+      - flutter pub upgrade
+
+  # ─── Code quality ───────────────────────────────────────────────────────────
+
+  analyze:
+    desc: Run static analysis (flutter analyze)
+    cmds:
+      - flutter analyze
+
+  format:
+    desc: Auto-format all Dart source files
+    cmds:
+      - dart format lib/ test/
+
+  format:check:
+    desc: Check formatting without modifying files (CI-safe)
+    cmds:
+      - dart format --output=none --set-exit-if-changed lib/ test/
+
+  # ─── Tests ──────────────────────────────────────────────────────────────────
+
+  test:
+    desc: Run the full test suite
+    cmds:
+      - flutter test
+
+  test:file:
+    desc: "Run a single test file  (usage: task test:file -- test/widget_test.dart)"
+    cmds:
+      - flutter test {{.CLI_ARGS}}
+
+  test:coverage:
+    desc: Run tests and collect lcov coverage data (coverage/lcov.info)
+    cmds:
+      - flutter test --coverage
+
+  coverage:html:
+    desc: "Generate HTML report from lcov.info (requires lcov: brew install lcov / apt install lcov)"
+    cmds:
+      - genhtml coverage/lcov.info -o coverage/html
+
+  # ─── Run ────────────────────────────────────────────────────────────────────
+
+  run:windows:
+    desc: Launch the app on the Windows desktop
+    cmds:
+      - flutter run -d windows
+
+  run:linux:
+    desc: Launch the app on the Linux desktop
+    cmds:
+      - flutter run -d linux
+
+  run:
+    desc: Launch the app on the default connected device
+    cmds:
+      - flutter run
+
+  # ─── Build ──────────────────────────────────────────────────────────────────
+
+  build:windows:
+    desc: Build a Windows release bundle
+    cmds:
+      - flutter build windows
+
+  build:linux:
+    desc: Build a Linux release bundle
+    cmds:
+      - flutter build linux
+
+  # ─── Clean ──────────────────────────────────────────────────────────────────
+
+  clean:
+    desc: Remove build artifacts and re-fetch dependencies
+    cmds:
+      - flutter clean
+      - flutter pub get
+
+  # ─── CI / pre-commit ────────────────────────────────────────────────────────
+
+  ci:
+    desc: "Full CI pipeline: format check → analyze → test"
+    cmds:
+      - task: format:check
+      - task: analyze
+      - task: test
