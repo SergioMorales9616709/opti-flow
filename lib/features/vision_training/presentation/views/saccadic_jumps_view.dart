@@ -33,9 +33,7 @@ class _ExerciseArea extends ConsumerWidget {
     final alignment = ref.watch(
       saccadicJumpsProvider.select((s) => s.currentAlignment),
     );
-    final status = ref.watch(
-      saccadicJumpsProvider.select((s) => s.status),
-    );
+    final status = ref.watch(saccadicJumpsProvider.select((s) => s.status));
     final symbolIndex = ref.watch(
       saccadicJumpsProvider.select((s) => s.symbolIndex),
     );
@@ -156,12 +154,8 @@ class _PatternSelector extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final pattern = ref.watch(
-      saccadicJumpsProvider.select((s) => s.pattern),
-    );
-    final status = ref.watch(
-      saccadicJumpsProvider.select((s) => s.status),
-    );
+    final pattern = ref.watch(saccadicJumpsProvider.select((s) => s.pattern));
+    final status = ref.watch(saccadicJumpsProvider.select((s) => s.status));
     final notifier = ref.read(saccadicJumpsProvider.notifier);
 
     final bool isSelectable = status == ExerciseStatus.idle;
@@ -173,8 +167,9 @@ class _PatternSelector extends ConsumerWidget {
             .map((p) => ButtonSegment(value: p, label: Text(p.label)))
             .toList(),
         selected: {pattern},
-        onSelectionChanged:
-            isSelectable ? (s) => notifier.setPattern(s.first) : null,
+        onSelectionChanged: isSelectable
+            ? (s) => notifier.setPattern(s.first)
+            : null,
       ),
     );
   }

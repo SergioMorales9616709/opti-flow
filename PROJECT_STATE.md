@@ -52,7 +52,7 @@ lib/
   - Horizontal/Vertical: convergencia wide → mid → narrow (6 posiciones).
   - Patrón Z: top-left → top-right → bottom-left → bottom-right (4 posiciones).
   - Patrón N: top-left → bottom-left → top-right → bottom-right (4 posiciones).
-  - Cruz: top → bottom → left → right (4 posiciones).
+  - Cruz: convergencia en eje vertical luego horizontal, wide → mid → narrow (12 posiciones).
   - Diagonal X: convergencia en ambas diagonales, wide → mid → narrow (12 posiciones).
 - Velocidad: 400 ms – 2000 ms por salto; valor por defecto 1200 ms.
 - Control: Slider de velocidad + `SegmentedButton` de selección de patrón.

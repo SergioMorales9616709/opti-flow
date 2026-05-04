@@ -36,36 +36,52 @@ void main() {
       expect(SaccadicPattern.zPattern.sequence.length, 4);
     });
 
-    test('zPattern follows top-left, top-right, bottom-left, bottom-right order', () {
-      final seq = SaccadicPattern.zPattern.sequence;
-      expect(seq[0], const Alignment(-0.88, -0.88));
-      expect(seq[1], const Alignment(0.88, -0.88));
-      expect(seq[2], const Alignment(-0.88, 0.88));
-      expect(seq[3], const Alignment(0.88, 0.88));
-    });
+    test(
+      'zPattern follows top-left, top-right, bottom-left, bottom-right order',
+      () {
+        final seq = SaccadicPattern.zPattern.sequence;
+        expect(seq[0], const Alignment(-0.88, -0.88));
+        expect(seq[1], const Alignment(0.88, -0.88));
+        expect(seq[2], const Alignment(-0.88, 0.88));
+        expect(seq[3], const Alignment(0.88, 0.88));
+      },
+    );
 
     test('nPattern has 4 positions', () {
       expect(SaccadicPattern.nPattern.sequence.length, 4);
     });
 
-    test('nPattern follows top-left, bottom-left, top-right, bottom-right order', () {
-      final seq = SaccadicPattern.nPattern.sequence;
-      expect(seq[0], const Alignment(-0.88, -0.88));
-      expect(seq[1], const Alignment(-0.88, 0.88));
-      expect(seq[2], const Alignment(0.88, -0.88));
-      expect(seq[3], const Alignment(0.88, 0.88));
+    test(
+      'nPattern follows top-left, bottom-left, top-right, bottom-right order',
+      () {
+        final seq = SaccadicPattern.nPattern.sequence;
+        expect(seq[0], const Alignment(-0.88, -0.88));
+        expect(seq[1], const Alignment(-0.88, 0.88));
+        expect(seq[2], const Alignment(0.88, -0.88));
+        expect(seq[3], const Alignment(0.88, 0.88));
+      },
+    );
+
+    test('crossPattern has 12 positions', () {
+      expect(SaccadicPattern.crossPattern.sequence.length, 12);
     });
 
-    test('crossPattern has 4 positions', () {
-      expect(SaccadicPattern.crossPattern.sequence.length, 4);
-    });
-
-    test('crossPattern follows top, bottom, left, right order', () {
+    test('crossPattern converges on vertical axis then horizontal axis', () {
       final seq = SaccadicPattern.crossPattern.sequence;
+      // vertical axis: wide → mid → narrow
       expect(seq[0], const Alignment(0, -0.88));
       expect(seq[1], const Alignment(0, 0.88));
-      expect(seq[2], const Alignment(-0.88, 0));
-      expect(seq[3], const Alignment(0.88, 0));
+      expect(seq[2], const Alignment(0, -0.44));
+      expect(seq[3], const Alignment(0, 0.44));
+      expect(seq[4], const Alignment(0, -0.22));
+      expect(seq[5], const Alignment(0, 0.22));
+      // horizontal axis: wide → mid → narrow
+      expect(seq[6], const Alignment(-0.88, 0));
+      expect(seq[7], const Alignment(0.88, 0));
+      expect(seq[8], const Alignment(-0.44, 0));
+      expect(seq[9], const Alignment(0.44, 0));
+      expect(seq[10], const Alignment(-0.22, 0));
+      expect(seq[11], const Alignment(0.22, 0));
     });
 
     test('xPattern has 12 positions', () {
