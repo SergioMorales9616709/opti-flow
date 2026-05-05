@@ -60,7 +60,6 @@ class _SmoothPursuitViewState extends ConsumerState<SmoothPursuitView>
       });
 
     return Scaffold(
-      backgroundColor: const Color(0xFF161B22),
       body: SafeArea(
         child: Stack(
           children: [
@@ -73,7 +72,10 @@ class _SmoothPursuitViewState extends ConsumerState<SmoothPursuitView>
                     status: state.status,
                   ),
                 ),
-                const Divider(height: 1, color: Color(0xFF2A2A2A)),
+                Divider(
+                  height: 1,
+                  color: Theme.of(context).colorScheme.outlineVariant,
+                ),
                 _ControlPanel(state: state, notifier: notifier),
               ],
             ),
@@ -82,7 +84,12 @@ class _SmoothPursuitViewState extends ConsumerState<SmoothPursuitView>
               left: 8,
               child: IconButton(
                 tooltip: 'Volver al menú',
-                icon: const Icon(Icons.arrow_back, color: Colors.white38),
+                icon: Icon(
+                  Icons.arrow_back,
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.5),
+                ),
                 onPressed: () {
                   notifier.reset();
                   Navigator.pop(context);
@@ -147,10 +154,10 @@ class _StimulusCircle extends StatelessWidget {
       height: 32,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: const Color(0xFF00E5FF),
+        color: Theme.of(context).colorScheme.primary,
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00E5FF).withValues(alpha: 0.6),
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.6),
             blurRadius: 16,
             spreadRadius: 2,
           ),
@@ -165,13 +172,18 @@ class _IdleOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
     return Container(
-      color: Colors.black.withValues(alpha: 0.55),
+      color: cs.surface.withValues(alpha: 0.88),
       alignment: Alignment.center,
-      child: const Text(
+      child: Text(
         'Presiona INICIAR para comenzar\nel seguimiento ocular',
         textAlign: TextAlign.center,
-        style: TextStyle(color: Colors.white54, fontSize: 18, height: 1.6),
+        style: TextStyle(
+          color: cs.onSurface.withValues(alpha: 0.65),
+          fontSize: 18,
+          height: 1.6,
+        ),
       ),
     );
   }
@@ -183,9 +195,11 @@ class _SavingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withValues(alpha: 0.75),
+      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
       alignment: Alignment.center,
-      child: const CircularProgressIndicator(color: Color(0xFF00E5FF)),
+      child: CircularProgressIndicator(
+        color: Theme.of(context).colorScheme.primary,
+      ),
     );
   }
 }
@@ -196,17 +210,21 @@ class _SavedOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withValues(alpha: 0.75),
+      color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.92),
       alignment: Alignment.center,
-      child: const Column(
+      child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.check_circle_outline, color: Color(0xFF00E5FF), size: 56),
-          SizedBox(height: 16),
+          Icon(
+            Icons.check_circle_outline,
+            color: Theme.of(context).colorScheme.primary,
+            size: 56,
+          ),
+          const SizedBox(height: 16),
           Text(
             '¡Progreso guardado!',
             style: TextStyle(
-              color: Color(0xFF00E5FF),
+              color: Theme.of(context).colorScheme.primary,
               fontSize: 22,
               fontWeight: FontWeight.w600,
             ),
@@ -257,9 +275,9 @@ class _ControlPanel extends StatelessWidget {
                 child: Text(
                   '${state.speedMs} ms',
                   textAlign: TextAlign.right,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
-                    color: Color(0xFF00E5FF),
+                    color: Theme.of(context).colorScheme.primary,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -269,8 +287,10 @@ class _ControlPanel extends StatelessWidget {
                 icon: Icon(
                   state.isMuted ? Icons.volume_off : Icons.volume_up,
                   color: state.isMuted
-                      ? Colors.white38
-                      : const Color(0xFF00E5FF),
+                      ? Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.4)
+                      : Theme.of(context).colorScheme.primary,
                 ),
                 onPressed: notifier.toggleMute,
               ),
@@ -279,9 +299,14 @@ class _ControlPanel extends StatelessWidget {
           // Row 2: slider
           Row(
             children: [
-              const Text(
+              Text(
                 'Rápido',
-                style: TextStyle(color: Colors.white38, fontSize: 12),
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.4),
+                  fontSize: 12,
+                ),
               ),
               Expanded(
                 child: Slider(
@@ -294,9 +319,14 @@ class _ControlPanel extends StatelessWidget {
                       : (v) => notifier.setSpeed(v.round()),
                 ),
               ),
-              const Text(
+              Text(
                 'Lento',
-                style: TextStyle(color: Colors.white38, fontSize: 12),
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.4),
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -317,7 +347,7 @@ class _ControlPanel extends StatelessWidget {
                   icon: const Icon(Icons.stop),
                   label: const Text('DETENER Y GUARDAR'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFF4444),
+                    backgroundColor: Theme.of(context).colorScheme.error,
                     foregroundColor: Colors.white,
                   ),
                 ),
