@@ -191,6 +191,9 @@ class _ControlPanel extends ConsumerWidget {
     final maxSpeedMs = ref.watch(
       saccadicJumpsProvider.select((s) => s.maxSpeedMs),
     );
+    final isSoundEnabled = ref.watch(
+      saccadicJumpsProvider.select((s) => s.isSoundEnabled),
+    );
     final notifier = ref.read(saccadicJumpsProvider.notifier);
 
     final bool isActive = status == ExerciseStatus.active;
@@ -240,6 +243,17 @@ class _ControlPanel extends ConsumerWidget {
               const Text(
                 'Lento',
                 style: TextStyle(color: Colors.white38, fontSize: 12),
+              ),
+              const SizedBox(width: 8),
+              IconButton(
+                tooltip: isSoundEnabled ? 'Silenciar metrónomo' : 'Activar metrónomo',
+                icon: Icon(
+                  isSoundEnabled ? Icons.volume_up : Icons.volume_off,
+                  color: isSoundEnabled
+                      ? const Color(0xFF00E5FF)
+                      : Colors.white38,
+                ),
+                onPressed: notifier.toggleSound,
               ),
             ],
           ),

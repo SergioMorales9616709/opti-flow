@@ -3,13 +3,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/database/database_helper.dart';
 import 'core/theme/app_theme.dart';
+import 'core/utils/audio_service.dart';
 import 'features/vision_training/presentation/views/vision_training_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await DatabaseHelper.initialize();
 
-  runApp(const ProviderScope(child: OptiFlowApp()));
+  final audioService = AudioService();
+  await audioService.init();
+
+  runApp(
+    ProviderScope(
+      overrides: [
+        audioServiceProvider.overrideWithValue(audioService),
+      ],
+      child: const OptiFlowApp(),
+    ),
+  );
 }
 
 class OptiFlowApp extends StatelessWidget {

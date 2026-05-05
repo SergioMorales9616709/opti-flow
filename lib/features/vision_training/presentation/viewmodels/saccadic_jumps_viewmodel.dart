@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../../core/database/progress_repository.dart';
+import '../../../../../core/utils/audio_cue.dart';
+import '../../../../../core/utils/audio_service.dart';
 import '../../domain/saccadic_pattern.dart';
 
 enum ExerciseStatus { idle, active, saving, saved }
@@ -16,6 +18,7 @@ class SaccadicJumpsState {
   final int speedMs;
   final int minSpeedMs;
   final int maxSpeedMs;
+  final bool isSoundEnabled;
 
   const SaccadicJumpsState({
     required this.pattern,
@@ -25,6 +28,7 @@ class SaccadicJumpsState {
     required this.speedMs,
     required this.minSpeedMs,
     required this.maxSpeedMs,
+    required this.isSoundEnabled,
   });
 
   Alignment get currentAlignment => pattern.sequence[stepIndex];
@@ -35,6 +39,7 @@ class SaccadicJumpsState {
     int? symbolIndex,
     ExerciseStatus? status,
     int? speedMs,
+    bool? isSoundEnabled,
   }) {
     return SaccadicJumpsState(
       pattern: pattern ?? this.pattern,
@@ -44,6 +49,7 @@ class SaccadicJumpsState {
       speedMs: speedMs ?? this.speedMs,
       minSpeedMs: minSpeedMs,
       maxSpeedMs: maxSpeedMs,
+      isSoundEnabled: isSoundEnabled ?? this.isSoundEnabled,
     );
   }
 }
@@ -66,6 +72,7 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
       speedMs: _defaultSpeedMs,
       minSpeedMs: _minSpeedMs,
       maxSpeedMs: _maxSpeedMs,
+      isSoundEnabled: true,
     );
   }
 
@@ -104,9 +111,13 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
     state = state.copyWith(status: ExerciseStatus.saved);
   }
 
+  void toggleSound() {
+    state = state.copyWith(isSoundEnabled: !state.isSoundEnabled);
+  }
+
   void reset() {
     _cancelTimer();
-    state = const SaccadicJumpsState(
+    state = SaccadicJumpsState(
       pattern: SaccadicPattern.horizontal,
       stepIndex: 0,
       symbolIndex: 0,
@@ -114,6 +125,7 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
       speedMs: _defaultSpeedMs,
       minSpeedMs: _minSpeedMs,
       maxSpeedMs: _maxSpeedMs,
+      isSoundEnabled: state.isSoundEnabled,
     );
   }
 
@@ -125,6 +137,9 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
         stepIndex: (state.stepIndex + 1) % seq.length,
         symbolIndex: state.symbolIndex + 1,
       );
+      if (state.isSoundEnabled) {
+        ref.read(audioServiceProvider).play(AudioCue.click);
+      }
     });
   }
 

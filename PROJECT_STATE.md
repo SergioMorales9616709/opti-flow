@@ -12,6 +12,7 @@ Construido con Flutter Desktop + Dart.
 - **Frontend:** Flutter Desktop (Dart)
 - **Gestión de estado:** `flutter_riverpod` (MVVM)
 - **Almacenamiento local:** SQLite via `sqflite_common_ffi` (soporte nativo escritorio)
+- **Audio:** `audioplayers` ^6.x — `AudioService` global con precarga en `main.dart`
 
 ### Patrón: Feature-First + MVVM
 ```
@@ -19,7 +20,7 @@ lib/
 ├── core/
 │   ├── database/       # Inicialización SQLite, repositorios, providers
 │   ├── theme/          # Tema global de la app
-│   └── utils/          # Utilidades compartidas
+│   └── utils/          # AudioCue (Enhanced Enum), AudioService + audioServiceProvider
 ├── features/
 │   └── vision_training/
 │       ├── data/       # Modelos de datos, DTOs
@@ -55,8 +56,9 @@ lib/
   - Cruz: convergencia en eje vertical luego horizontal, wide → mid → narrow (12 posiciones).
   - Diagonal X: convergencia en ambas diagonales, wide → mid → narrow (12 posiciones).
 - Velocidad: 400 ms – 2000 ms por salto; valor por defecto 1200 ms.
-- Control: Slider de velocidad + `SegmentedButton` de selección de patrón.
+- Control: Slider de velocidad + `SegmentedButton` de selección de patrón + botón mute.
 - Persistencia: guarda `max_speed_ms` al finalizar el ejercicio.
+- **Auditory Entrainment (Metrónomo opcional):** click sincronizado con cada salto visual. `AudioCue.click` precargado con `PlayerMode.lowLatency`. Mute persistente entre sesiones desactivado (se resetea a `true` al pulsar "Nuevo Ejercicio", mantenido durante la sesión activa).
 
 ---
 
@@ -70,11 +72,14 @@ lib/
 | 4    | Ejercicio Saltos Sacádicos (VM + Vista)      | ✅ Completado |
 | 5    | Validación final (`flutter analyze`)         | ✅ Completado |
 | 6    | Refactorización: patrones múltiples sacádicos        | ✅ Completado |
+| 7    | Auditory Entrainment: metrónomo + AudioService global | ✅ Completado |
 
 ---
 
-## Módulo 1 — Versión 3 ✅
+## Módulo 1 — Versión 4 ✅
 
 `flutter analyze` reporta **0 issues**. 19 tests pasando.
 Patrones soportados: Horizontal, Vertical, Z, N, Cruz, Diagonal X.
-Fecha: 2026-04-22
+Auditory Entrainment: click sincronizado, modo bajo latencia, mute por sesión.
+`AudioService` global reutilizable para futuros módulos (Lectura Veloz, cognitivos).
+Fecha: 2026-05-04
