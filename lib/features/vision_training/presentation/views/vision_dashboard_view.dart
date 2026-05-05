@@ -10,78 +10,44 @@ class VisionDashboardView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final cs = Theme.of(context).colorScheme;
-    final gradientEnd = Color.alphaBlend(
-      cs.primary.withValues(alpha: 0.18),
-      cs.surface,
-    );
-
     return Scaffold(
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    'ENTRENAMIENTO VISUAL',
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.35),
-                      fontSize: 11,
-                      letterSpacing: 4,
-                    ),
-                  ),
-                  const SizedBox(height: 48),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _ExerciseCard(
-                        title: 'SALTOS\nSACÁDICOS',
-                        subtitle: '6 patrones · metrónomo',
-                        iconData: Icons.compare_arrows,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [cs.surfaceContainerHighest, gradientEnd],
-                        ),
-                        onTap: () => Navigator.push<void>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SaccadicJumpsView(),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      _ExerciseCard(
-                        title: 'SEGUIMIENTO\nOCULAR',
-                        subtitle: '3 patrones · BGM Lo-Fi',
-                        iconData: Icons.track_changes,
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: [cs.surfaceContainerHighest, gradientEnd],
-                        ),
-                        onTap: () => Navigator.push<void>(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const SmoothPursuitView(),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+            _AppHeader(
+              currentTheme: ref.watch(themeProvider),
+              notifier: ref.read(themeProvider.notifier),
             ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: _ThemeSelector(
-                currentTheme: ref.watch(themeProvider),
-                notifier: ref.read(themeProvider.notifier),
+            Expanded(
+              child: Center(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _ExerciseCard(
+                      title: 'SALTOS\nSACÁDICOS',
+                      subtitle: '6 patrones · metrónomo',
+                      iconData: Icons.compare_arrows,
+                      onTap: () => Navigator.push<void>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SaccadicJumpsView(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 24),
+                    _ExerciseCard(
+                      title: 'SEGUIMIENTO\nOCULAR',
+                      subtitle: '3 patrones · BGM Lo-Fi',
+                      iconData: Icons.track_changes,
+                      onTap: () => Navigator.push<void>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const SmoothPursuitView(),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -91,6 +57,49 @@ class VisionDashboardView extends ConsumerWidget {
   }
 }
 
+// ---------------------------------------------------------------------------
+// App header — label left, theme selector right
+// ---------------------------------------------------------------------------
+class _AppHeader extends StatelessWidget {
+  const _AppHeader({required this.currentTheme, required this.notifier});
+
+  final AppTheme currentTheme;
+  final ThemeNotifier notifier;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Container(
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.35)),
+        ),
+      ),
+      child: Row(
+        children: [
+          Text(
+            'ENTRENAMIENTO VISUAL',
+            style: TextStyle(
+              color: cs.onSurface.withValues(alpha: 0.35),
+              fontSize: 11,
+              letterSpacing: 4,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          _ThemeSelector(currentTheme: currentTheme, notifier: notifier),
+          const SizedBox(width: 4),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Theme selector
+// ---------------------------------------------------------------------------
 class _ThemeSelector extends StatelessWidget {
   const _ThemeSelector({required this.currentTheme, required this.notifier});
 
@@ -100,7 +109,6 @@ class _ThemeSelector extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -168,9 +176,6 @@ class _ThemeButton extends StatelessWidget {
     final iconColor = isActive
         ? colorScheme.primary
         : colorScheme.onSurface.withValues(alpha: 0.4);
-    final labelColor = isActive
-        ? colorScheme.primary
-        : colorScheme.onSurface.withValues(alpha: 0.3);
 
     return Tooltip(
       message: tooltip,
@@ -179,9 +184,8 @@ class _ThemeButton extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
-          width: 48,
-          height: 52,
-          padding: const EdgeInsets.all(4),
+          width: 40,
+          height: 40,
           decoration: BoxDecoration(
             color: isActive
                 ? colorScheme.primary.withValues(alpha: 0.15)
@@ -193,25 +197,10 @@ class _ThemeButton extends StatelessWidget {
                   : colorScheme.outline.withValues(alpha: 0.3),
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isActive ? activeIcon : inactiveIcon,
-                size: 18,
-                color: iconColor,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                label,
-                style: TextStyle(
-                  color: labelColor,
-                  fontSize: 6.5,
-                  letterSpacing: 0.5,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
+          child: Icon(
+            isActive ? activeIcon : inactiveIcon,
+            size: 18,
+            color: iconColor,
           ),
         ),
       ),
@@ -219,80 +208,120 @@ class _ThemeButton extends StatelessWidget {
   }
 }
 
-class _ExerciseCard extends StatelessWidget {
+// ---------------------------------------------------------------------------
+// Exercise card — hover state, adaptive gradient via AppCardColors extension
+// ---------------------------------------------------------------------------
+class _ExerciseCard extends StatefulWidget {
   const _ExerciseCard({
     required this.title,
     required this.subtitle,
     required this.iconData,
-    required this.gradient,
     required this.onTap,
   });
 
   final String title;
   final String subtitle;
   final IconData iconData;
-  final LinearGradient gradient;
   final VoidCallback onTap;
+
+  @override
+  State<_ExerciseCard> createState() => _ExerciseCardState();
+}
+
+class _ExerciseCardState extends State<_ExerciseCard> {
+  bool _hovered = false;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final cardColors = Theme.of(context).extension<AppCardColors>()!;
 
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 280,
-        height: 200,
-        decoration: BoxDecoration(
-          gradient: gradient,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: cs.primary.withValues(alpha: 0.15)),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              top: -12,
-              right: -12,
-              child: Icon(
-                iconData,
-                size: 120,
-                color: Theme.of(
-                  context,
-                ).colorScheme.onSurface.withValues(alpha: 0.06),
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedScale(
+          scale: _hovered ? 1.025 : 1.0,
+          duration: const Duration(milliseconds: 160),
+          curve: Curves.easeOut,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            curve: Curves.easeOut,
+            width: 380,
+            height: 260,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [cardColors.gradientStart, cardColors.gradientEnd],
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(28),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: cs.primary,
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(width: 32, height: 1.5, color: cs.primary),
-                  const SizedBox(height: 8),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.5),
-                      fontSize: 11,
-                    ),
-                  ),
-                ],
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: cardColors.borderColor.withValues(
+                  alpha: _hovered ? 0.38 : 0.18,
+                ),
+                width: _hovered ? 1.5 : 1.0,
               ),
+              boxShadow: _hovered
+                  ? [
+                      BoxShadow(
+                        color: cardColors.borderColor.withValues(alpha: 0.1),
+                        blurRadius: 28,
+                        spreadRadius: 4,
+                      ),
+                    ]
+                  : [],
             ),
-          ],
+            child: Stack(
+              children: [
+                Positioned(
+                  top: -12,
+                  right: -12,
+                  child: Icon(
+                    widget.iconData,
+                    size: 140,
+                    color: cs.onSurface.withValues(alpha: 0.05),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        widget.title,
+                        style: TextStyle(
+                          color: cs.primary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 2,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        width: _hovered ? 52 : 32,
+                        height: 1.5,
+                        color: cs.primary,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        widget.subtitle,
+                        style: TextStyle(
+                          color: cs.onSurface.withValues(alpha: 0.5),
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
