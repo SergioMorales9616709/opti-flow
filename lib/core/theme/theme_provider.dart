@@ -5,9 +5,8 @@ class ThemeNotifier extends Notifier<AppTheme> {
   @override
   AppTheme build() => AppTheme.dark;
 
-  void setTheme(AppTheme theme) {
-    state = theme;
-  }
+  AppTheme get theme => state;
+  set theme(AppTheme t) => state = t;
 }
 
 final themeProvider = NotifierProvider<ThemeNotifier, AppTheme>(

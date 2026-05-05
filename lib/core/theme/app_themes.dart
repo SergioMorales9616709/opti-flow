@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 enum AppTheme { dark, light, cyber }
 
 class AppThemes {
+  AppThemes._();
+
   static ThemeData themeData(AppTheme theme) {
     switch (theme) {
       case AppTheme.dark:
@@ -17,6 +19,11 @@ class AppThemes {
             activeTrackColor: Color(0xFF00E5FF),
             thumbColor: Color(0xFF00E5FF),
             inactiveTrackColor: Color(0xFF2A2A2A),
+          ),
+          cardTheme: const CardThemeData(
+            color: Color(0xFF21262D),
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
@@ -37,12 +44,16 @@ class AppThemes {
           scaffoldBackgroundColor: const Color(0xFFF8F9FA),
           colorScheme: ColorScheme.fromSeed(
             seedColor: const Color(0xFFE63946),
-            brightness: Brightness.light,
           ),
           sliderTheme: const SliderThemeData(
             activeTrackColor: Color(0xFFE63946),
             thumbColor: Color(0xFFE63946),
             inactiveTrackColor: Color(0xFFDDDDDD),
+          ),
+          cardTheme: const CardThemeData(
+            color: Color(0xFFFFFFFF),
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
@@ -69,6 +80,11 @@ class AppThemes {
             activeTrackColor: Color(0xFFFF007F),
             thumbColor: Color(0xFFFF007F),
             inactiveTrackColor: Color(0xFF2A2035),
+          ),
+          cardTheme: const CardThemeData(
+            color: Color(0xFF2D2A5E),
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
