@@ -19,7 +19,7 @@ Construido con Flutter Desktop + Dart.
 lib/
 ├── core/
 │   ├── database/       # Inicialización SQLite, repositorios, providers
-│   ├── theme/          # Tema global de la app
+│   ├── theme/          # Sistema de temas dinámico (Dark/Light/Cyber) — AppThemes, ThemeNotifier
 │   └── utils/          # AudioCue (Enhanced Enum), AudioService + audioServiceProvider
 ├── features/
 │   └── vision_training/
@@ -86,6 +86,7 @@ lib/
 | 7    | Auditory Entrainment: metrónomo + AudioService     | ✅ Completado |
 | 8    | Dashboard + Seguimiento Ocular + BGM (Iteración 4) | ✅ Completado |
 | 9    | UX Polish: colores, rangos de velocidad, área visual, panel compacto | ✅ Completado |
+| 10   | Sistema de Temas Dinámico (Dark, Light, Cyber-Focus) con Riverpod    | ✅ Completado |
 
 ---
 
@@ -96,5 +97,5 @@ Navegación: Dashboard Hero → ejercicios con botón flotante (sin AppBar).
 Saltos Sacádicos: 6 patrones, metrónomo sincronizado, persiste en SQLite. Extremos a `±0.95`. Velocidad: 300–1200 ms (default 800 ms).
 Seguimiento Ocular: 3 patrones, animación 60fps con AnimatedBuilder, radio al 90% del área. BGM en loop, persiste en SQLite. Velocidad: 1500–5000 ms (default 3000 ms).
 BGM: `AudioService._bgmPlayer` dedicado con `ReleaseMode.loop`. Se detiene al salir/pausar.
-UI: Fondo `#161B22`, tarjetas Dashboard con base `#21262D`. Panel inferior compacto (3 filas: selector+ms+mute / slider / botón).
+Temas: Sistema dinámico Dark/Light/Cyber-Focus seleccionable en el Dashboard (IconButtons 🌙/☀️/⚡). Todos los colores de las vistas usan `Theme.of(context).colorScheme` — cero colores hardcoded en vistas. Panel inferior compacto (3 filas: selector+ms+mute / slider / botón).
 Fecha: 2026-05-05

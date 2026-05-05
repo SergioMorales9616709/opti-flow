@@ -42,9 +42,7 @@ class AppThemes {
         return ThemeData(
           useMaterial3: true,
           scaffoldBackgroundColor: const Color(0xFFF8F9FA),
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFFE63946),
-          ),
+          colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFE63946)),
           sliderTheme: const SliderThemeData(
             activeTrackColor: Color(0xFFE63946),
             thumbColor: Color(0xFFE63946),
