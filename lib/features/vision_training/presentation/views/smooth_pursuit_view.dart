@@ -26,7 +26,7 @@ class _SmoothPursuitViewState extends ConsumerState<SmoothPursuitView>
     _audioService = ref.read(audioServiceProvider);
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 5000),
+      duration: const Duration(milliseconds: 3000),
     );
   }
 
@@ -60,7 +60,7 @@ class _SmoothPursuitViewState extends ConsumerState<SmoothPursuitView>
       });
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: const Color(0xFF161B22),
       body: SafeArea(
         child: Stack(
           children: [
@@ -121,7 +121,7 @@ class _StimulusArea extends StatelessWidget {
               final t = controller.value * 2 * math.pi;
               final (dx, dy) = pattern.position(t);
               return Align(
-                alignment: Alignment(dx * 0.72, dy * 0.72),
+                alignment: Alignment(dx * 0.90, dy * 0.90),
                 child: child,
               );
             },
@@ -218,35 +218,7 @@ class _SavedOverlay extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Pattern selector
-// ---------------------------------------------------------------------------
-class _PatternSelector extends StatelessWidget {
-  const _PatternSelector({required this.state, required this.notifier});
-
-  final SmoothPursuitState state;
-  final SmoothPursuitNotifier notifier;
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelectable = state.status == ExerciseStatus.idle;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-      child: SegmentedButton<PursuitPattern>(
-        segments: PursuitPattern.values
-            .map((p) => ButtonSegment(value: p, label: Text(p.label)))
-            .toList(),
-        selected: {state.pattern},
-        onSelectionChanged: isSelectable
-            ? (s) => notifier.setPattern(s.first)
-            : null,
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Control panel — speed slider + action buttons + mute
+// Control panel — pattern selector + speed slider + action buttons (compact)
 // ---------------------------------------------------------------------------
 class _ControlPanel extends StatelessWidget {
   const _ControlPanel({required this.state, required this.notifier});
@@ -261,30 +233,50 @@ class _ControlPanel extends StatelessWidget {
     final isSaved = state.status == ExerciseStatus.saved;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _PatternSelector(state: state, notifier: notifier),
-          const SizedBox(height: 8),
+          // Row 1: pattern selector + speed label + mute
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Velocidad del ciclo',
-                style: TextStyle(fontSize: 15, color: Colors.white70),
-              ),
-              Text(
-                '${state.speedMs} ms / ciclo',
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF00E5FF),
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: SegmentedButton<PursuitPattern>(
+                  segments: PursuitPattern.values
+                      .map((p) => ButtonSegment(value: p, label: Text(p.label)))
+                      .toList(),
+                  selected: {state.pattern},
+                  onSelectionChanged: state.status == ExerciseStatus.idle
+                      ? (s) => notifier.setPattern(s.first)
+                      : null,
                 ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 58,
+                child: Text(
+                  '${state.speedMs} ms',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF00E5FF),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: state.isMuted ? 'Activar música' : 'Silenciar música',
+                icon: Icon(
+                  state.isMuted ? Icons.volume_off : Icons.volume_up,
+                  color: state.isMuted
+                      ? Colors.white38
+                      : const Color(0xFF00E5FF),
+                ),
+                onPressed: notifier.toggleMute,
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          // Row 2: slider
           Row(
             children: [
               const Text(
@@ -306,31 +298,20 @@ class _ControlPanel extends StatelessWidget {
                 'Lento',
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: state.isMuted ? 'Activar música' : 'Silenciar música',
-                icon: Icon(
-                  state.isMuted ? Icons.volume_off : Icons.volume_up,
-                  color: state.isMuted
-                      ? Colors.white38
-                      : const Color(0xFF00E5FF),
-                ),
-                onPressed: notifier.toggleMute,
-              ),
             ],
           ),
-          const SizedBox(height: 20),
+          // Row 3: action button
+          const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (!isActive && !isSaved) ...[
+              if (!isActive && !isSaved)
                 ElevatedButton.icon(
                   onPressed: isSaving ? null : notifier.startExercise,
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('INICIAR'),
                 ),
-              ],
-              if (isActive) ...[
+              if (isActive)
                 ElevatedButton.icon(
                   onPressed: notifier.stopAndSave,
                   icon: const Icon(Icons.stop),
@@ -340,14 +321,12 @@ class _ControlPanel extends StatelessWidget {
                     foregroundColor: Colors.white,
                   ),
                 ),
-              ],
-              if (isSaved) ...[
+              if (isSaved)
                 ElevatedButton.icon(
                   onPressed: notifier.reset,
                   icon: const Icon(Icons.refresh),
                   label: const Text('NUEVO EJERCICIO'),
                 ),
-              ],
             ],
           ),
         ],

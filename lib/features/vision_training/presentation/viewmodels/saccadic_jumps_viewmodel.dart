@@ -54,9 +54,9 @@ class SaccadicJumpsState {
 }
 
 class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
-  static const int _defaultSpeedMs = 1200;
-  static const int _minSpeedMs = 400;
-  static const int _maxSpeedMs = 2000;
+  static const int _defaultSpeedMs = 800;
+  static const int _minSpeedMs = 300;
+  static const int _maxSpeedMs = 1200;
 
   Timer? _timer;
 

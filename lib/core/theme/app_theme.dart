@@ -7,7 +7,7 @@ class AppTheme {
       seedColor: const Color(0xFF00E5FF),
       brightness: Brightness.dark,
     ),
-    scaffoldBackgroundColor: const Color(0xFF0D0D0D),
+    scaffoldBackgroundColor: const Color(0xFF161B22),
     sliderTheme: const SliderThemeData(
       activeTrackColor: Color(0xFF00E5FF),
       thumbColor: Color(0xFF00E5FF),

@@ -15,9 +15,9 @@ class SmoothPursuitState {
     this.maxSpeedMs = _maxSpeed,
   });
 
-  static const int _defaultSpeedMs = 5000;
-  static const int _minSpeed = 2000;
-  static const int _maxSpeed = 12000;
+  static const int _defaultSpeedMs = 3000;
+  static const int _minSpeed = 1500;
+  static const int _maxSpeed = 5000;
 
   final PursuitPattern pattern;
   final ExerciseStatus status;
