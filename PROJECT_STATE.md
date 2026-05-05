@@ -48,6 +48,9 @@ lib/
 ## Módulos
 
 ### Módulo 1: Visión
+
+**Navegación:** `VisionDashboardView` es el home de la app. Presenta dos Hero cards (gradiente + icono fantasma + acento cyan) que navegan con `Navigator.push` a cada ejercicio. Cada ejercicio tiene botón flotante de retroceso (`Stack + Positioned + IconButton`) sin AppBar para máxima inmersión.
+
 **Ejercicio: Saltos Sacádicos**
 - Patrones: Horizontal, Vertical, Patrón Z, Patrón N, Cruz, Diagonal X (enum `SaccadicPattern` en `domain/`).
   - Horizontal/Vertical: convergencia wide → mid → narrow (6 posiciones).
@@ -60,26 +63,36 @@ lib/
 - Persistencia: guarda `max_speed_ms` al finalizar el ejercicio.
 - **Auditory Entrainment (Metrónomo opcional):** click sincronizado con cada salto visual. `AudioCue.click` precargado con `PlayerMode.lowLatency`. Mute persistente entre sesiones desactivado (se resetea a `true` al pulsar "Nuevo Ejercicio", mantenido durante la sesión activa).
 
+**Ejercicio: Seguimiento Ocular (Smooth Pursuit)**
+- Patrones: Círculo (`cos/sin`), Infinito (Lissajous: `sin(t) / sin(2t)/2`), Horizontal (`sin(t)`). Enum `PursuitPattern` en `domain/`.
+- Animación: `AnimationController` en la View (`ConsumerStatefulWidget with SingleTickerProviderStateMixin`). Solo el círculo se reconstruye en cada frame via `AnimatedBuilder`. Controles y selección de patrón son estáticos.
+- Velocidad: 2000 ms – 12000 ms por ciclo; valor por defecto 5000 ms. Slider actualiza la duración del `AnimationController` en tiempo real.
+- Estímulo: círculo sólido 32×32px color `#00E5FF` con glow (`BoxShadow`, blur 16, spread 2, opacidad 60%).
+- **BGM (Música de Fondo):** `AudioCue.bgmFlow` mapeado a `assets/audio/bgm_flow.mp3`. `AudioService._bgmPlayer` dedicado con `ReleaseMode.loop`. Métodos `playBgm({volume})` / `stopBgm()` en `AudioService`. La música inicia al presionar INICIAR y se detiene al parar, volver al menú, o mutar. Botón mute en la UI (Icons.volume_off / Icons.volume_up).
+- Persistencia: guarda `exercise_type = 'smooth_pursuit'` y `max_speed_ms` al finalizar.
+
 ---
 
 ## Estado Actual
 
-| Paso | Descripción                                 | Estado     |
-|------|---------------------------------------------|------------|
-| 1    | Inicialización del proyecto Flutter          | ✅ Completado |
-| 2    | Estructura Feature-First + dependencias      | ✅ Completado |
-| 3    | Capa de datos SQLite                         | ✅ Completado |
-| 4    | Ejercicio Saltos Sacádicos (VM + Vista)      | ✅ Completado |
-| 5    | Validación final (`flutter analyze`)         | ✅ Completado |
-| 6    | Refactorización: patrones múltiples sacádicos        | ✅ Completado |
-| 7    | Auditory Entrainment: metrónomo + AudioService global | ✅ Completado |
+| Paso | Descripción                                        | Estado        |
+|------|----------------------------------------------------|---------------|
+| 1    | Inicialización del proyecto Flutter                | ✅ Completado |
+| 2    | Estructura Feature-First + dependencias            | ✅ Completado |
+| 3    | Capa de datos SQLite                               | ✅ Completado |
+| 4    | Ejercicio Saltos Sacádicos (VM + Vista)            | ✅ Completado |
+| 5    | Validación final (`flutter analyze`)               | ✅ Completado |
+| 6    | Refactorización: patrones múltiples sacádicos      | ✅ Completado |
+| 7    | Auditory Entrainment: metrónomo + AudioService     | ✅ Completado |
+| 8    | Dashboard + Seguimiento Ocular + BGM (Iteración 4) | ✅ Completado |
 
 ---
 
-## Módulo 1 — Versión 4 ✅
+## Módulo 1 — Versión 5 ✅
 
 `flutter analyze` reporta **0 issues**. 19 tests pasando.
-Patrones soportados: Horizontal, Vertical, Z, N, Cruz, Diagonal X.
-Auditory Entrainment: click sincronizado, modo bajo latencia, mute por sesión.
-`AudioService` global reutilizable para futuros módulos (Lectura Veloz, cognitivos).
-Fecha: 2026-05-04
+Navegación: Dashboard Hero → ejercicios con botón flotante (sin AppBar).
+Saltos Sacádicos: 6 patrones, metrónomo sincronizado, persiste en SQLite.
+Seguimiento Ocular: 3 patrones, animación 60fps con AnimatedBuilder, BGM en loop, persiste en SQLite.
+BGM: `AudioService._bgmPlayer` dedicado con `ReleaseMode.loop`. Se detiene al salir/pausar.
+Fecha: 2026-05-05

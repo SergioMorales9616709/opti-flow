@@ -29,6 +29,6 @@ void main() {
       ),
     );
 
-    expect(find.text('OptiFlow — Entrenamiento Visual'), findsOneWidget);
+    expect(find.text('ENTRENAMIENTO VISUAL'), findsOneWidget);
   });
 }

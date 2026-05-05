@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optiflow/core/database/database_helper.dart';
 import 'package:optiflow/core/theme/app_theme.dart';
 import 'package:optiflow/core/utils/audio_service.dart';
-import 'package:optiflow/features/vision_training/presentation/views/vision_training_screen.dart';
+import 'package:optiflow/features/vision_training/presentation/views/vision_dashboard_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -29,7 +29,7 @@ class OptiFlowApp extends StatelessWidget {
       title: 'OptiFlow',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
-      home: const VisionTrainingScreen(),
+      home: const VisionDashboardView(),
     );
   }
 }
