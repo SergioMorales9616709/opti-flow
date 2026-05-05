@@ -85,14 +85,16 @@ lib/
 | 6    | Refactorización: patrones múltiples sacádicos      | ✅ Completado |
 | 7    | Auditory Entrainment: metrónomo + AudioService     | ✅ Completado |
 | 8    | Dashboard + Seguimiento Ocular + BGM (Iteración 4) | ✅ Completado |
+| 9    | UX Polish: colores, rangos de velocidad, área visual, panel compacto | ✅ Completado |
 
 ---
 
-## Módulo 1 — Versión 5 ✅
+## Módulo 1 — Versión 6 ✅
 
-`flutter analyze` reporta **0 issues**. 19 tests pasando.
+`flutter analyze` reporta **0 issues**. 25 tests pasando.
 Navegación: Dashboard Hero → ejercicios con botón flotante (sin AppBar).
-Saltos Sacádicos: 6 patrones, metrónomo sincronizado, persiste en SQLite.
-Seguimiento Ocular: 3 patrones, animación 60fps con AnimatedBuilder, BGM en loop, persiste en SQLite.
+Saltos Sacádicos: 6 patrones, metrónomo sincronizado, persiste en SQLite. Extremos a `±0.95`. Velocidad: 300–1200 ms (default 800 ms).
+Seguimiento Ocular: 3 patrones, animación 60fps con AnimatedBuilder, radio al 90% del área. BGM en loop, persiste en SQLite. Velocidad: 1500–5000 ms (default 3000 ms).
 BGM: `AudioService._bgmPlayer` dedicado con `ReleaseMode.loop`. Se detiene al salir/pausar.
+UI: Fondo `#161B22`, tarjetas Dashboard con base `#21262D`. Panel inferior compacto (3 filas: selector+ms+mute / slider / botón).
 Fecha: 2026-05-05

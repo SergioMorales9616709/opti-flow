@@ -9,6 +9,7 @@ Construida con Flutter para Windows y Linux.
 ## Ejercicios
 
 ### Saltos Sacádicos
+
 El ojo salta entre estímulos visuales distribuidos en patrones geométricos. Entrena la velocidad y precisión del movimiento sacádico.
 
 - 6 patrones de salto (horizontal, vertical, diagonal, cruzado y secuencias convergentes)
@@ -17,6 +18,7 @@ El ojo salta entre estímulos visuales distribuidos en patrones geométricos. En
 - Registro del progreso al finalizar
 
 ### Seguimiento Ocular Suave
+
 Un estímulo se desplaza de forma continua siguiendo trayectorias geométricas. Entrena la suavidad y estabilidad del seguimiento.
 
 - 3 patrones de trayectoria (circular, elíptico, figura 8)
@@ -53,13 +55,13 @@ flutter run -d linux
 
 ## Stack
 
-| Capa | Tecnología |
-|---|---|
-| UI | Flutter (Material 3, tema oscuro) |
-| Estado | flutter_riverpod 2.x |
-| Base de datos | sqflite_common_ffi (SQLite para desktop) |
-| Audio | audioplayers |
-| Análisis estático | very_good_analysis |
+| Capa              | Tecnología                               |
+| ----------------- | ---------------------------------------- |
+| UI                | Flutter (Material 3, tema oscuro)        |
+| Estado            | flutter_riverpod 2.x                     |
+| Base de datos     | sqflite_common_ffi (SQLite para desktop) |
+| Audio             | audioplayers                             |
+| Análisis estático | very_good_analysis                       |
 
 ---
 

@@ -8,7 +8,7 @@ class VisionDashboardView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: const Color(0xFF161B22),
       body: SafeArea(
         child: Center(
           child: Column(
@@ -33,7 +33,7 @@ class VisionDashboardView extends StatelessWidget {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF1A1A1A), Color(0xFF0D2020)],
+                      colors: [Color(0xFF21262D), Color(0xFF0D2020)],
                     ),
                     onTap: () => Navigator.push<void>(
                       context,
@@ -50,7 +50,7 @@ class VisionDashboardView extends StatelessWidget {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF1A1A1A), Color(0xFF0D1A20)],
+                      colors: [Color(0xFF21262D), Color(0xFF0D1A20)],
                     ),
                     onTap: () => Navigator.push<void>(
                       context,

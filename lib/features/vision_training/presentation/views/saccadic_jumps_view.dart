@@ -9,7 +9,7 @@ class SaccadicJumpsView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0D0D0D),
+      backgroundColor: const Color(0xFF161B22),
       body: SafeArea(
         child: Stack(
           children: [
@@ -17,7 +17,6 @@ class SaccadicJumpsView extends ConsumerWidget {
               children: [
                 Expanded(child: _ExerciseArea()),
                 Divider(height: 1, color: Color(0xFF2A2A2A)),
-                _PatternSelector(),
                 _ControlPanel(),
               ],
             ),
@@ -162,42 +161,14 @@ class _SavedOverlay extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Pattern selector — SegmentedButton, only enabled when idle
-// ---------------------------------------------------------------------------
-class _PatternSelector extends ConsumerWidget {
-  const _PatternSelector();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final pattern = ref.watch(saccadicJumpsProvider.select((s) => s.pattern));
-    final status = ref.watch(saccadicJumpsProvider.select((s) => s.status));
-    final notifier = ref.read(saccadicJumpsProvider.notifier);
-
-    final isSelectable = status == ExerciseStatus.idle;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
-      child: SegmentedButton<SaccadicPattern>(
-        segments: SaccadicPattern.values
-            .map((p) => ButtonSegment(value: p, label: Text(p.label)))
-            .toList(),
-        selected: {pattern},
-        onSelectionChanged: isSelectable
-            ? (s) => notifier.setPattern(s.first)
-            : null,
-      ),
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Control panel — speed slider + action buttons
+// Control panel — pattern selector + speed slider + action buttons (compact)
 // ---------------------------------------------------------------------------
 class _ControlPanel extends ConsumerWidget {
   const _ControlPanel();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final pattern = ref.watch(saccadicJumpsProvider.select((s) => s.pattern));
     final status = ref.watch(saccadicJumpsProvider.select((s) => s.status));
     final speedMs = ref.watch(saccadicJumpsProvider.select((s) => s.speedMs));
     final minSpeedMs = ref.watch(
@@ -216,28 +187,52 @@ class _ControlPanel extends ConsumerWidget {
     final isSaved = status == ExerciseStatus.saved;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Row 1: pattern selector + speed label + mute
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Velocidad del estímulo',
-                style: TextStyle(fontSize: 15, color: Colors.white70),
-              ),
-              Text(
-                '$speedMs ms / salto',
-                style: const TextStyle(
-                  fontSize: 15,
-                  color: Color(0xFF00E5FF),
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: SegmentedButton<SaccadicPattern>(
+                  segments: SaccadicPattern.values
+                      .map((p) => ButtonSegment(value: p, label: Text(p.label)))
+                      .toList(),
+                  selected: {pattern},
+                  onSelectionChanged: status == ExerciseStatus.idle
+                      ? (s) => notifier.setPattern(s.first)
+                      : null,
                 ),
+              ),
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 58,
+                child: Text(
+                  '$speedMs ms',
+                  textAlign: TextAlign.right,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Color(0xFF00E5FF),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: isSoundEnabled
+                    ? 'Silenciar metrónomo'
+                    : 'Activar metrónomo',
+                icon: Icon(
+                  isSoundEnabled ? Icons.volume_up : Icons.volume_off,
+                  color: isSoundEnabled
+                      ? const Color(0xFF00E5FF)
+                      : Colors.white38,
+                ),
+                onPressed: notifier.toggleSound,
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          // Row 2: slider
           Row(
             children: [
               const Text(
@@ -259,33 +254,20 @@ class _ControlPanel extends ConsumerWidget {
                 'Lento',
                 style: TextStyle(color: Colors.white38, fontSize: 12),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                tooltip: isSoundEnabled
-                    ? 'Silenciar metrónomo'
-                    : 'Activar metrónomo',
-                icon: Icon(
-                  isSoundEnabled ? Icons.volume_up : Icons.volume_off,
-                  color: isSoundEnabled
-                      ? const Color(0xFF00E5FF)
-                      : Colors.white38,
-                ),
-                onPressed: notifier.toggleSound,
-              ),
             ],
           ),
-          const SizedBox(height: 20),
+          // Row 3: action button
+          const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              if (!isActive && !isSaved) ...[
+              if (!isActive && !isSaved)
                 ElevatedButton.icon(
                   onPressed: isSaving ? null : notifier.startExercise,
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('INICIAR'),
                 ),
-              ],
-              if (isActive) ...[
+              if (isActive)
                 ElevatedButton.icon(
                   onPressed: notifier.stopAndSave,
                   icon: const Icon(Icons.stop),
@@ -295,14 +277,12 @@ class _ControlPanel extends ConsumerWidget {
                     foregroundColor: Colors.white,
                   ),
                 ),
-              ],
-              if (isSaved) ...[
+              if (isSaved)
                 ElevatedButton.icon(
                   onPressed: notifier.reset,
                   icon: const Icon(Icons.refresh),
                   label: const Text('NUEVO EJERCICIO'),
                 ),
-              ],
             ],
           ),
         ],
