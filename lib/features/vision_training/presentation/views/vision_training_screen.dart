@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'saccadic_jumps_view.dart';
+import 'package:optiflow/features/vision_training/presentation/views/saccadic_jumps_view.dart';
 
 class VisionTrainingScreen extends StatelessWidget {
   const VisionTrainingScreen({super.key});

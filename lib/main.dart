@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'core/database/database_helper.dart';
-import 'core/theme/app_theme.dart';
-import 'core/utils/audio_service.dart';
-import 'features/vision_training/presentation/views/vision_training_screen.dart';
+import 'package:optiflow/core/database/database_helper.dart';
+import 'package:optiflow/core/theme/app_theme.dart';
+import 'package:optiflow/core/utils/audio_service.dart';
+import 'package:optiflow/features/vision_training/presentation/views/vision_training_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,9 +14,7 @@ Future<void> main() async {
 
   runApp(
     ProviderScope(
-      overrides: [
-        audioServiceProvider.overrideWithValue(audioService),
-      ],
+      overrides: [audioServiceProvider.overrideWithValue(audioService)],
       child: const OptiFlowApp(),
     ),
   );

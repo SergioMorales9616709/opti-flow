@@ -2,24 +2,14 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../../../../core/database/progress_repository.dart';
-import '../../../../../core/utils/audio_cue.dart';
-import '../../../../../core/utils/audio_service.dart';
-import '../../domain/saccadic_pattern.dart';
+import 'package:optiflow/core/database/progress_repository.dart';
+import 'package:optiflow/core/utils/audio_cue.dart';
+import 'package:optiflow/core/utils/audio_service.dart';
+import 'package:optiflow/features/vision_training/domain/saccadic_pattern.dart';
 
 enum ExerciseStatus { idle, active, saving, saved }
 
 class SaccadicJumpsState {
-  final SaccadicPattern pattern;
-  final int stepIndex;
-  final int symbolIndex;
-  final ExerciseStatus status;
-  final int speedMs;
-  final int minSpeedMs;
-  final int maxSpeedMs;
-  final bool isSoundEnabled;
-
   const SaccadicJumpsState({
     required this.pattern,
     required this.stepIndex,
@@ -30,6 +20,15 @@ class SaccadicJumpsState {
     required this.maxSpeedMs,
     required this.isSoundEnabled,
   });
+
+  final SaccadicPattern pattern;
+  final int stepIndex;
+  final int symbolIndex;
+  final ExerciseStatus status;
+  final int speedMs;
+  final int minSpeedMs;
+  final int maxSpeedMs;
+  final bool isSoundEnabled;
 
   Alignment get currentAlignment => pattern.sequence[stepIndex];
 
@@ -78,7 +77,7 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
 
   void setPattern(SaccadicPattern p) {
     if (state.status != ExerciseStatus.idle) return;
-    // reset stepIndex to 0 — new pattern may have fewer steps than the current index
+    // Reset stepIndex: new pattern may have fewer steps than current index.
     state = state.copyWith(pattern: p, stepIndex: 0);
   }
 

@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'database_helper.dart';
+import 'package:optiflow/core/database/database_helper.dart';
 
 abstract interface class ProgressRepository {
   Future<void> saveProgress({

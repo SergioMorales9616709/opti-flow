@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../domain/saccadic_pattern.dart';
-import '../viewmodels/saccadic_jumps_viewmodel.dart';
+import 'package:optiflow/features/vision_training/domain/saccadic_pattern.dart';
+import 'package:optiflow/features/vision_training/presentation/viewmodels/saccadic_jumps_viewmodel.dart';
 
 class SaccadicJumpsView extends ConsumerWidget {
   const SaccadicJumpsView({super.key});
@@ -38,10 +37,8 @@ class _ExerciseArea extends ConsumerWidget {
       saccadicJumpsProvider.select((s) => s.symbolIndex),
     );
 
-    final bool isActive = status == ExerciseStatus.active;
-    final String symbol = isActive
-        ? _symbols[symbolIndex % _symbols.length]
-        : '●';
+    final isActive = status == ExerciseStatus.active;
+    final symbol = isActive ? _symbols[symbolIndex % _symbols.length] : '●';
 
     return Stack(
       alignment: Alignment.center,
@@ -66,9 +63,9 @@ class _ExerciseArea extends ConsumerWidget {
 
 class _StimulusWidget extends StatelessWidget {
   const _StimulusWidget({
-    super.key,
     required this.symbol,
     required this.active,
+    super.key,
   });
 
   final String symbol;
@@ -158,7 +155,7 @@ class _PatternSelector extends ConsumerWidget {
     final status = ref.watch(saccadicJumpsProvider.select((s) => s.status));
     final notifier = ref.read(saccadicJumpsProvider.notifier);
 
-    final bool isSelectable = status == ExerciseStatus.idle;
+    final isSelectable = status == ExerciseStatus.idle;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 12),
@@ -196,9 +193,9 @@ class _ControlPanel extends ConsumerWidget {
     );
     final notifier = ref.read(saccadicJumpsProvider.notifier);
 
-    final bool isActive = status == ExerciseStatus.active;
-    final bool isSaving = status == ExerciseStatus.saving;
-    final bool isSaved = status == ExerciseStatus.saved;
+    final isActive = status == ExerciseStatus.active;
+    final isSaving = status == ExerciseStatus.saving;
+    final isSaved = status == ExerciseStatus.saved;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
@@ -246,7 +243,9 @@ class _ControlPanel extends ConsumerWidget {
               ),
               const SizedBox(width: 8),
               IconButton(
-                tooltip: isSoundEnabled ? 'Silenciar metrónomo' : 'Activar metrónomo',
+                tooltip: isSoundEnabled
+                    ? 'Silenciar metrónomo'
+                    : 'Activar metrónomo',
                 icon: Icon(
                   isSoundEnabled ? Icons.volume_up : Icons.volume_off,
                   color: isSoundEnabled

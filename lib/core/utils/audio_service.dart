@@ -1,7 +1,6 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import 'audio_cue.dart';
+import 'package:optiflow/core/utils/audio_cue.dart';
 
 class AudioService {
   final Map<AudioCue, AudioPlayer> _players = {};

@@ -39,17 +39,17 @@ enum SaccadicPattern {
     ],
     SaccadicPattern.crossPattern => [
       const Alignment(0, -0.88), // 1  top extreme
-      const Alignment(0, 0.88),  // 2  bottom extreme
+      const Alignment(0, 0.88), // 2  bottom extreme
       const Alignment(0, -0.44), // 3  mid top
-      const Alignment(0, 0.44),  // 4  mid bottom
+      const Alignment(0, 0.44), // 4  mid bottom
       const Alignment(0, -0.22), // 5  near-center top
-      const Alignment(0, 0.22),  // 6  near-center bottom
+      const Alignment(0, 0.22), // 6  near-center bottom
       const Alignment(-0.88, 0), // 7  left extreme
-      const Alignment(0.88, 0),  // 8  right extreme
+      const Alignment(0.88, 0), // 8  right extreme
       const Alignment(-0.44, 0), // 9  mid left
-      const Alignment(0.44, 0),  // 10 mid right
+      const Alignment(0.44, 0), // 10 mid right
       const Alignment(-0.22, 0), // 11 near-center left
-      const Alignment(0.22, 0),  // 12 near-center right
+      const Alignment(0.22, 0), // 12 near-center right
     ],
     SaccadicPattern.xPattern => [
       const Alignment(-0.88, -0.88), // 1  top-left extreme
