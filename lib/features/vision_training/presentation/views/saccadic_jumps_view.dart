@@ -8,13 +8,31 @@ class SaccadicJumpsView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return const Column(
-      children: [
-        Expanded(child: _ExerciseArea()),
-        Divider(height: 1, color: Color(0xFF2A2A2A)),
-        _PatternSelector(),
-        _ControlPanel(),
-      ],
+    return Scaffold(
+      backgroundColor: const Color(0xFF0D0D0D),
+      body: SafeArea(
+        child: Stack(
+          children: [
+            const Column(
+              children: [
+                Expanded(child: _ExerciseArea()),
+                Divider(height: 1, color: Color(0xFF2A2A2A)),
+                _PatternSelector(),
+                _ControlPanel(),
+              ],
+            ),
+            Positioned(
+              top: 8,
+              left: 8,
+              child: IconButton(
+                tooltip: 'Volver al menú',
+                icon: const Icon(Icons.arrow_back, color: Colors.white38),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
