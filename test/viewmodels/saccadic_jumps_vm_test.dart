@@ -1,6 +1,43 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:optiflow/core/database/progress_repository.dart';
+import 'package:optiflow/core/utils/audio_cue.dart';
+import 'package:optiflow/core/utils/audio_service.dart';
 import 'package:optiflow/features/vision_training/presentation/viewmodels/saccadic_jumps_viewmodel.dart';
+
+class _FakeAudioService extends AudioService {
+  final List<AudioCue> played = [];
+
+  @override
+  Future<void> init() async {}
+
+  @override
+  Future<void> play(AudioCue cue) async => played.add(cue);
+
+  @override
+  Future<void> playBgm({double volume = 0.5}) async {}
+
+  @override
+  Future<void> stopBgm() async {}
+}
+
+class _FakeProgressRepository implements ProgressRepository {
+  @override
+  Future<void> saveProgress({
+    required String exerciseType,
+    required int maxSpeedMs,
+  }) async {}
+}
+
+ProviderContainer _makeContainer() => ProviderContainer(
+      overrides: [
+        audioServiceProvider.overrideWithValue(_FakeAudioService()),
+        progressRepositoryProvider.overrideWithValue(
+          _FakeProgressRepository(),
+        ),
+      ],
+    );
 
 void main() {
   group('SaccadicJumpsNotifier initial state', () {
@@ -44,6 +81,86 @@ void main() {
       expect(
         container.read(saccadicJumpsProvider).selectedDuration,
         ExerciseDuration.s30,
+      );
+    });
+  });
+
+  group('SaccadicJumpsNotifier countdown', () {
+    test('startExercise with finite duration sets timeLeftSeconds', () {
+      fakeAsync((async) {
+        final container = _makeContainer();
+        addTearDown(container.dispose);
+        container
+            .read(saccadicJumpsProvider.notifier)
+            .setDuration(ExerciseDuration.s30);
+        container.read(saccadicJumpsProvider.notifier).startExercise();
+
+        expect(
+          container.read(saccadicJumpsProvider).timeLeftSeconds,
+          30,
+        );
+        async.elapse(const Duration(seconds: 1));
+        expect(
+          container.read(saccadicJumpsProvider).timeLeftSeconds,
+          29,
+        );
+      });
+    });
+
+    test('startExercise with infinite duration keeps timeLeftSeconds null', () {
+      fakeAsync((async) {
+        final container = _makeContainer();
+        addTearDown(container.dispose);
+        container
+            .read(saccadicJumpsProvider.notifier)
+            .setDuration(ExerciseDuration.infinite);
+        container.read(saccadicJumpsProvider.notifier).startExercise();
+
+        async.elapse(const Duration(seconds: 5));
+        expect(
+          container.read(saccadicJumpsProvider).timeLeftSeconds,
+          isNull,
+        );
+      });
+    });
+
+    test('countdown auto-stops and plays success at zero', () {
+      fakeAsync((async) {
+        final audio = _FakeAudioService();
+        final container = ProviderContainer(
+          overrides: [
+            audioServiceProvider.overrideWithValue(audio),
+            progressRepositoryProvider
+                .overrideWithValue(_FakeProgressRepository()),
+          ],
+        );
+        addTearDown(container.dispose);
+        container
+            .read(saccadicJumpsProvider.notifier)
+            .setDuration(ExerciseDuration.s30);
+        container.read(saccadicJumpsProvider.notifier).startExercise();
+
+        async.elapse(const Duration(seconds: 30));
+        async.flushMicrotasks();
+
+        expect(
+          container.read(saccadicJumpsProvider).status,
+          ExerciseStatus.saved,
+        );
+        expect(audio.played, contains(AudioCue.success));
+      });
+    });
+
+    test('selectedDuration preserved after reset', () {
+      final container = _makeContainer();
+      addTearDown(container.dispose);
+      container
+          .read(saccadicJumpsProvider.notifier)
+          .setDuration(ExerciseDuration.m2);
+      container.read(saccadicJumpsProvider.notifier).reset();
+      expect(
+        container.read(saccadicJumpsProvider).selectedDuration,
+        ExerciseDuration.m2,
       );
     });
   });

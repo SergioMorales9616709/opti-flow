@@ -87,6 +87,7 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
   static const int _maxSpeedMs = 1200;
 
   Timer? _timer;
+  Timer? _countdownTimer;
 
   @override
   SaccadicJumpsState build() {
@@ -123,8 +124,15 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
 
   void startExercise() {
     if (state.status == ExerciseStatus.active) return;
-    state = state.copyWith(status: ExerciseStatus.active);
+    final seconds = state.selectedDuration.seconds;
+    state = state.copyWith(
+      status: ExerciseStatus.active,
+      timeLeftSeconds: seconds,
+    );
     _startTimer(state.speedMs);
+    if (seconds != null) {
+      _startCountdown();
+    }
   }
 
   void stopAndSave() {
@@ -162,6 +170,22 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
     );
   }
 
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final left = state.timeLeftSeconds;
+      if (left == null) return;
+      if (left <= 1) {
+        _countdownTimer?.cancel();
+        _countdownTimer = null;
+        ref.read(audioServiceProvider).play(AudioCue.success);
+        stopAndSave();
+      } else {
+        state = state.copyWith(timeLeftSeconds: left - 1);
+      }
+    });
+  }
+
   void _startTimer(int ms) {
     _cancelTimer();
     _timer = Timer.periodic(Duration(milliseconds: ms), (_) {
@@ -179,6 +203,8 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
   void _cancelTimer() {
     _timer?.cancel();
     _timer = null;
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
   }
 }
 
