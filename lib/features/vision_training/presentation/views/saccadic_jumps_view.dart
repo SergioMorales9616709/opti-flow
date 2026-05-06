@@ -25,15 +25,32 @@ class SaccadicJumpsView extends ConsumerWidget {
             Positioned(
               top: 8,
               left: 8,
-              child: IconButton(
-                tooltip: 'Volver al menú',
-                icon: Icon(
-                  Icons.arrow_back,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-                onPressed: () => Navigator.pop(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconButton(
+                    tooltip: 'Volver al menú',
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Text(
+                      'Práctica Libre',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -80,6 +97,7 @@ class _ExerciseArea extends ConsumerWidget {
         ),
         if (status == ExerciseStatus.idle) const _IdleOverlay(),
         if (status == ExerciseStatus.saved) const _SavedOverlay(),
+        const _CountdownHud(),
       ],
     );
   }
@@ -288,11 +306,25 @@ class _ControlPanel extends ConsumerWidget {
               ),
             ],
           ),
-          // Row 3: action button
+          // Row 3: duration selector + action button
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              SegmentedButton<ExerciseDuration>(
+                segments: ExerciseDuration.values
+                    .map((d) => ButtonSegment(value: d, label: Text(d.label)))
+                    .toList(),
+                selected: {
+                  ref.watch(
+                    saccadicJumpsProvider.select((s) => s.selectedDuration),
+                  ),
+                },
+                onSelectionChanged: isActive || isSaving || isSaved
+                    ? null
+                    : (s) => notifier.setDuration(s.first),
+              ),
+              const SizedBox(width: 16),
               if (!isActive && !isSaved)
                 ElevatedButton.icon(
                   onPressed: isSaving ? null : notifier.startExercise,
@@ -318,6 +350,54 @@ class _ControlPanel extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _CountdownHud extends ConsumerWidget {
+  const _CountdownHud();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(
+      saccadicJumpsProvider.select((s) => s.status),
+    );
+    final duration = ref.watch(
+      saccadicJumpsProvider.select((s) => s.selectedDuration),
+    );
+    final timeLeft = ref.watch(
+      saccadicJumpsProvider.select((s) => s.timeLeftSeconds),
+    );
+
+    if (status != ExerciseStatus.active ||
+        duration == ExerciseDuration.infinite ||
+        timeLeft == null) {
+      return const SizedBox.shrink();
+    }
+
+    final minutes = timeLeft ~/ 60;
+    final seconds = timeLeft % 60;
+    final mm = minutes.toString().padLeft(2, '0');
+    final ss = seconds.toString().padLeft(2, '0');
+    final label = '$mm:$ss';
+
+    return Positioned(
+      top: 24,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Text(
+          label,
+          style: TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 32,
+            fontWeight: FontWeight.w300,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
       ),
     );
   }
