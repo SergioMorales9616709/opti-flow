@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optiflow/core/utils/audio_service.dart';
 import 'package:optiflow/features/vision_training/domain/pursuit_pattern.dart';
 import 'package:optiflow/features/vision_training/presentation/viewmodels/saccadic_jumps_viewmodel.dart'
-    show ExerciseStatus;
+    show ExerciseDuration, ExerciseStatus;
 import 'package:optiflow/features/vision_training/presentation/viewmodels/smooth_pursuit_viewmodel.dart';
 
 class SmoothPursuitView extends ConsumerStatefulWidget {
@@ -82,18 +82,35 @@ class _SmoothPursuitViewState extends ConsumerState<SmoothPursuitView>
             Positioned(
               top: 8,
               left: 8,
-              child: IconButton(
-                tooltip: 'Volver al menú',
-                icon: Icon(
-                  Icons.arrow_back,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.5),
-                ),
-                onPressed: () {
-                  notifier.reset();
-                  Navigator.pop(context);
-                },
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  IconButton(
+                    tooltip: 'Volver al menú',
+                    icon: Icon(
+                      Icons.arrow_back,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurface.withValues(alpha: 0.5),
+                    ),
+                    onPressed: () {
+                      notifier.reset();
+                      Navigator.pop(context);
+                    },
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 12),
+                    child: Text(
+                      'Práctica Libre',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -139,6 +156,7 @@ class _StimulusArea extends StatelessWidget {
         if (status == ExerciseStatus.idle) const _IdleOverlay(),
         if (status == ExerciseStatus.saving) const _SavingOverlay(),
         if (status == ExerciseStatus.saved) const _SavedOverlay(),
+        const _SmoothCountdownHud(),
       ],
     );
   }
@@ -330,11 +348,21 @@ class _ControlPanel extends StatelessWidget {
               ),
             ],
           ),
-          // Row 3: action button
+          // Row 3: duration selector + action button
           const SizedBox(height: 4),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              SegmentedButton<ExerciseDuration>(
+                segments: ExerciseDuration.values
+                    .map((d) => ButtonSegment(value: d, label: Text(d.label)))
+                    .toList(),
+                selected: {state.selectedDuration},
+                onSelectionChanged: isActive || isSaving || isSaved
+                    ? null
+                    : (s) => notifier.setDuration(s.first),
+              ),
+              const SizedBox(width: 16),
               if (!isActive && !isSaved)
                 ElevatedButton.icon(
                   onPressed: isSaving ? null : notifier.startExercise,
@@ -360,6 +388,51 @@ class _ControlPanel extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SmoothCountdownHud extends ConsumerWidget {
+  const _SmoothCountdownHud();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final status = ref.watch(
+      smoothPursuitProvider.select((s) => s.status),
+    );
+    final duration = ref.watch(
+      smoothPursuitProvider.select((s) => s.selectedDuration),
+    );
+    final timeLeft = ref.watch(
+      smoothPursuitProvider.select((s) => s.timeLeftSeconds),
+    );
+
+    if (status != ExerciseStatus.active ||
+        duration == ExerciseDuration.infinite ||
+        timeLeft == null) {
+      return const SizedBox.shrink();
+    }
+
+    final mm = (timeLeft ~/ 60).toString().padLeft(2, '0');
+    final ss = (timeLeft % 60).toString().padLeft(2, '0');
+
+    return Positioned(
+      top: 24,
+      left: 0,
+      right: 0,
+      child: Center(
+        child: Text(
+          '$mm:$ss',
+          style: TextStyle(
+            fontFamily: 'monospace',
+            fontSize: 32,
+            fontWeight: FontWeight.w300,
+            color: Theme.of(
+              context,
+            ).colorScheme.onSurface.withValues(alpha: 0.5),
+          ),
+        ),
       ),
     );
   }
