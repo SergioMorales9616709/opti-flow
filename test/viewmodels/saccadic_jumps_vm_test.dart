@@ -77,7 +77,9 @@ void main() {
     });
 
     test('setDuration changes selectedDuration when idle', () {
-      container.read(saccadicJumpsProvider.notifier).setDuration(ExerciseDuration.s30);
+      container
+          .read(saccadicJumpsProvider.notifier)
+          .setDuration(ExerciseDuration.s30);
       expect(
         container.read(saccadicJumpsProvider).selectedDuration,
         ExerciseDuration.s30,
@@ -140,8 +142,9 @@ void main() {
             .setDuration(ExerciseDuration.s30);
         container.read(saccadicJumpsProvider.notifier).startExercise();
 
-        async.elapse(const Duration(seconds: 30));
-        async.flushMicrotasks();
+        async
+          ..elapse(const Duration(seconds: 30))
+          ..flushMicrotasks();
 
         expect(
           container.read(saccadicJumpsProvider).status,
