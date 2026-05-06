@@ -21,4 +21,30 @@ void main() {
       expect(container.read(saccadicJumpsProvider).maxSpeedMs, 1200);
     });
   });
+
+  group('ExerciseDuration state', () {
+    late ProviderContainer container;
+
+    setUp(() => container = ProviderContainer());
+    tearDown(() => container.dispose());
+
+    test('default selectedDuration is s60', () {
+      expect(
+        container.read(saccadicJumpsProvider).selectedDuration,
+        ExerciseDuration.s60,
+      );
+    });
+
+    test('default timeLeftSeconds is null', () {
+      expect(container.read(saccadicJumpsProvider).timeLeftSeconds, isNull);
+    });
+
+    test('setDuration changes selectedDuration when idle', () {
+      container.read(saccadicJumpsProvider.notifier).setDuration(ExerciseDuration.s30);
+      expect(
+        container.read(saccadicJumpsProvider).selectedDuration,
+        ExerciseDuration.s30,
+      );
+    });
+  });
 }
