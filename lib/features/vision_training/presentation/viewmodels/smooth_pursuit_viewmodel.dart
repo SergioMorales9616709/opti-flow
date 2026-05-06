@@ -1,9 +1,18 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optiflow/core/database/progress_repository.dart';
+import 'package:optiflow/core/utils/audio_cue.dart';
 import 'package:optiflow/core/utils/audio_service.dart';
 import 'package:optiflow/features/vision_training/domain/pursuit_pattern.dart';
 import 'package:optiflow/features/vision_training/presentation/viewmodels/saccadic_jumps_viewmodel.dart'
-    show ExerciseStatus;
+    show ExerciseDuration, ExerciseStatus;
+
+class _Absent {
+  const _Absent();
+}
+
+const _absent = _Absent();
 
 class SmoothPursuitState {
   const SmoothPursuitState({
@@ -13,6 +22,8 @@ class SmoothPursuitState {
     this.isMuted = false,
     this.minSpeedMs = _minSpeed,
     this.maxSpeedMs = _maxSpeed,
+    this.selectedDuration = ExerciseDuration.s60,
+    this.timeLeftSeconds,
   });
 
   static const int _defaultSpeedMs = 3000;
@@ -25,12 +36,16 @@ class SmoothPursuitState {
   final bool isMuted;
   final int minSpeedMs;
   final int maxSpeedMs;
+  final ExerciseDuration selectedDuration;
+  final int? timeLeftSeconds;
 
   SmoothPursuitState copyWith({
     PursuitPattern? pattern,
     ExerciseStatus? status,
     int? speedMs,
     bool? isMuted,
+    ExerciseDuration? selectedDuration,
+    Object? timeLeftSeconds = _absent,
   }) {
     return SmoothPursuitState(
       pattern: pattern ?? this.pattern,
@@ -39,13 +54,22 @@ class SmoothPursuitState {
       isMuted: isMuted ?? this.isMuted,
       minSpeedMs: minSpeedMs,
       maxSpeedMs: maxSpeedMs,
+      selectedDuration: selectedDuration ?? this.selectedDuration,
+      timeLeftSeconds: timeLeftSeconds is _Absent
+          ? this.timeLeftSeconds
+          : timeLeftSeconds as int?,
     );
   }
 }
 
 class SmoothPursuitNotifier extends Notifier<SmoothPursuitState> {
+  Timer? _countdownTimer;
+
   @override
-  SmoothPursuitState build() => const SmoothPursuitState();
+  SmoothPursuitState build() {
+    ref.onDispose(_cancelCountdown);
+    return const SmoothPursuitState();
+  }
 
   void setPattern(PursuitPattern p) {
     if (state.status != ExerciseStatus.idle) return;
@@ -54,16 +78,29 @@ class SmoothPursuitNotifier extends Notifier<SmoothPursuitState> {
 
   void setSpeed(int ms) => state = state.copyWith(speedMs: ms);
 
+  void setDuration(ExerciseDuration d) {
+    if (state.status != ExerciseStatus.idle) return;
+    state = state.copyWith(selectedDuration: d, timeLeftSeconds: null);
+  }
+
   void startExercise() {
     if (state.status == ExerciseStatus.active) return;
-    state = state.copyWith(status: ExerciseStatus.active);
+    final seconds = state.selectedDuration.seconds;
+    state = state.copyWith(
+      status: ExerciseStatus.active,
+      timeLeftSeconds: seconds,
+    );
     if (!state.isMuted) {
       ref.read(audioServiceProvider).playBgm();
+    }
+    if (seconds != null) {
+      _startCountdown();
     }
   }
 
   void stopAndSave() {
     if (state.status != ExerciseStatus.active) return;
+    _cancelCountdown();
     ref.read(audioServiceProvider).stopBgm();
     state = state.copyWith(status: ExerciseStatus.saving);
     _persist();
@@ -89,8 +126,30 @@ class SmoothPursuitNotifier extends Notifier<SmoothPursuitState> {
   }
 
   void reset() {
+    _cancelCountdown();
     ref.read(audioServiceProvider).stopBgm();
-    state = const SmoothPursuitState();
+    state = SmoothPursuitState(selectedDuration: state.selectedDuration);
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final left = state.timeLeftSeconds;
+      if (left == null) return;
+      if (left <= 1) {
+        _countdownTimer?.cancel();
+        _countdownTimer = null;
+        ref.read(audioServiceProvider).play(AudioCue.success);
+        stopAndSave();
+      } else {
+        state = state.copyWith(timeLeftSeconds: left - 1);
+      }
+    });
+  }
+
+  void _cancelCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
   }
 }
 
