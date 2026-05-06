@@ -7,6 +7,24 @@ import 'package:optiflow/core/utils/audio_cue.dart';
 import 'package:optiflow/core/utils/audio_service.dart';
 import 'package:optiflow/features/vision_training/domain/saccadic_pattern.dart';
 
+enum ExerciseDuration {
+  infinite('∞', null),
+  s30('30s', 30),
+  s60('60s', 60),
+  m2('2m', 120);
+
+  const ExerciseDuration(this.label, this.seconds);
+  final String label;
+  final int? seconds;
+}
+
+// Sentinel privado para distinguir "no se pasó el parámetro" de null
+// en copyWith.
+class _Absent {
+  const _Absent();
+}
+const _absent = _Absent();
+
 enum ExerciseStatus { idle, active, saving, saved }
 
 class SaccadicJumpsState {
@@ -19,6 +37,8 @@ class SaccadicJumpsState {
     required this.minSpeedMs,
     required this.maxSpeedMs,
     required this.isSoundEnabled,
+    this.selectedDuration = ExerciseDuration.s60,
+    this.timeLeftSeconds,
   });
 
   final SaccadicPattern pattern;
@@ -29,6 +49,8 @@ class SaccadicJumpsState {
   final int minSpeedMs;
   final int maxSpeedMs;
   final bool isSoundEnabled;
+  final ExerciseDuration selectedDuration;
+  final int? timeLeftSeconds;
 
   Alignment get currentAlignment => pattern.sequence[stepIndex];
 
@@ -39,6 +61,8 @@ class SaccadicJumpsState {
     ExerciseStatus? status,
     int? speedMs,
     bool? isSoundEnabled,
+    ExerciseDuration? selectedDuration,
+    Object? timeLeftSeconds = _absent,
   }) {
     return SaccadicJumpsState(
       pattern: pattern ?? this.pattern,
@@ -49,6 +73,10 @@ class SaccadicJumpsState {
       minSpeedMs: minSpeedMs,
       maxSpeedMs: maxSpeedMs,
       isSoundEnabled: isSoundEnabled ?? this.isSoundEnabled,
+      selectedDuration: selectedDuration ?? this.selectedDuration,
+      timeLeftSeconds: timeLeftSeconds is _Absent
+          ? this.timeLeftSeconds
+          : timeLeftSeconds as int?,
     );
   }
 }
@@ -88,6 +116,11 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
     state = state.copyWith(speedMs: ms);
   }
 
+  void setDuration(ExerciseDuration d) {
+    if (state.status != ExerciseStatus.idle) return;
+    state = state.copyWith(selectedDuration: d, timeLeftSeconds: null);
+  }
+
   void startExercise() {
     if (state.status == ExerciseStatus.active) return;
     state = state.copyWith(status: ExerciseStatus.active);
@@ -125,6 +158,7 @@ class SaccadicJumpsNotifier extends Notifier<SaccadicJumpsState> {
       minSpeedMs: _minSpeedMs,
       maxSpeedMs: _maxSpeedMs,
       isSoundEnabled: state.isSoundEnabled,
+      selectedDuration: state.selectedDuration,
     );
   }
 
