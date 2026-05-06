@@ -128,7 +128,10 @@ class SmoothPursuitNotifier extends Notifier<SmoothPursuitState> {
   void reset() {
     _cancelCountdown();
     ref.read(audioServiceProvider).stopBgm();
-    state = SmoothPursuitState(selectedDuration: state.selectedDuration);
+    state = SmoothPursuitState(
+      isMuted: state.isMuted,
+      selectedDuration: state.selectedDuration,
+    );
   }
 
   void _startCountdown() {
