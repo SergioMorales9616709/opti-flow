@@ -49,7 +49,7 @@ lib/
 
 ### Módulo 1: Visión
 
-**Navegación:** `VisionDashboardView` es el home de la app. Presenta dos Hero cards (gradiente + icono fantasma + acento cyan) que navegan con `Navigator.push` a cada ejercicio. Cada ejercicio tiene `TextButton.icon` de retroceso integrado en el panel de control (sin AppBar, sin overlays flotantes).
+**Navegación:** `VisionDashboardView` es el home de la app. Presenta tres Hero cards en layout `Wrap` responsivo (gradiente + icono fantasma + acento cyan) que navegan con `Navigator.push` a cada ejercicio. Cada ejercicio tiene `TextButton.icon` de retroceso integrado en el panel de control (sin AppBar, sin overlays flotantes).
 
 **Ejercicio: Saltos Sacádicos**
 - Patrones: Horizontal, Vertical, Patrón Z, Patrón N, Cruz, Diagonal X (enum `SaccadicPattern` en `domain/`).
@@ -71,6 +71,17 @@ lib/
 - **BGM (Música de Fondo):** `AudioCue.bgmFlow` mapeado a `assets/audio/bgm_flow.mp3`. `AudioService._bgmPlayer` dedicado con `ReleaseMode.loop`. Métodos `playBgm({volume})` / `stopBgm()` en `AudioService`. La música inicia al presionar INICIAR y se detiene al parar, volver al menú, o mutar. Botón mute en la UI (Icons.volume_off / Icons.volume_up).
 - Persistencia: guarda `exercise_type = 'smooth_pursuit'` y `max_speed_ms` al finalizar.
 
+**Ejercicio: Expansión Periférica**
+- Patrones: Anillos Expansivos (`expandingCircles`), Marcos Contractivos (`contractingSquares`), Pulso Central (`pulsingTarget`). Enum `PeripheralPattern` en el viewmodel.
+  - Anillos: 4 anillos circulares desfasados (fase 0/0.25/0.5/0.75) nacen del centro y se expanden hacia los bordes, desvaneciéndose.
+  - Marcos: 4 marcos cuadrados desfasados nacen en los bordes y se contraen hacia el centro con fade in/out.
+  - Pulso: un único círculo que crece y se contrae suavemente (`repeat(reverse: true)`).
+- Animación: `AnimationController` en la View (`ConsumerStatefulWidget with SingleTickerProviderStateMixin`). `CustomPainter` atado a `AnimatedBuilder` para renderizado 60fps sin reconstruir el árbol de widgets. Punto de fijación central (punto + cruz suave) dibujado en todas las vistas.
+- Velocidad: 500 ms – 3000 ms por ciclo; valor por defecto 1500 ms. Slider actualiza la duración del `AnimationController` en tiempo real.
+- **Auditory Entrainment (Metrónomo):** `AudioCue.click` en cada `AnimationStatus.completed` (fin de ciclo para anillos/marcos, pico de expansión para pulso). Botón mute en la UI.
+- Persistencia: guarda `exercise_type = 'peripheral_expansion'` y `max_speed_ms` al finalizar.
+- Práctica Libre: soporta duración configurable (∞ / 30s / 60s / 2m, default 60s). Auto-guardado + `AudioCue.success` al expirar.
+
 ---
 
 ## Estado Actual
@@ -88,16 +99,18 @@ lib/
 | 9    | UX Polish: colores, rangos de velocidad, área visual, panel compacto | ✅ Completado |
 | 10   | Sistema de Temas Dinámico (Dark, Light, Cyber-Focus) con Riverpod    | ✅ Completado |
 | 11   | Temporizador de Práctica Libre: countdown + auto-guardado + success cue | ✅ Completado |
+| 12   | Expansión Periférica: CustomPainter + metrónomo por ciclo + Dashboard Wrap | ✅ Completado |
 
 ---
 
-## Módulo 1 — Versión 7 ✅
+## Módulo 1 — Versión 8 ✅
 
 `flutter analyze` reporta **0 issues**. 38 tests pasando.
-Navegación: Dashboard Hero → ejercicios con `TextButton.icon` de retroceso en panel de control (sin AppBar, layout `Column` sin overlays).
+Navegación: Dashboard Hero → ejercicios con `TextButton.icon` de retroceso en panel de control (sin AppBar, layout `Column` sin overlays). Dashboard usa `Wrap` responsivo (3 tarjetas).
 Saltos Sacádicos: 6 patrones, metrónomo sincronizado, persiste en SQLite. Extremos a `±0.95`. Velocidad: 300–1200 ms (default 800 ms).
 Seguimiento Ocular: 3 patrones, animación 60fps con AnimatedBuilder, radio al 90% del área. BGM en loop, persiste en SQLite. Velocidad: 1500–5000 ms (default 3000 ms).
 BGM: `AudioService._bgmPlayer` dedicado con `ReleaseMode.loop`. Se detiene al salir/pausar.
-Temas: Sistema dinámico Dark/Light/Cyber-Focus seleccionable en el Dashboard (IconButtons 🌙/☀️/⚡). Todos los colores de las vistas usan `Theme.of(context).colorScheme` — cero colores hardcoded en vistas. Panel inferior compacto (3 filas: selector+ms+mute / slider+selector-duración / back-nav+timer-chip+botón).
-Práctica Libre: ambos ejercicios soportan duración configurable (∞ / 30s / 60s / 2m, default 60s). Timer inline como pill chip en Fila 3 del panel (visible solo durante sesión activa con duración finita). Auto-guardado + `AudioCue.success` al expirar. Back nav como `TextButton.icon("Práctica Libre")` a la izquierda de Fila 3. Layout: `Column` puro — sin `Stack`/`Positioned`.
+Expansión Periférica: 3 patrones (Anillos/Marcos/Pulso), animación 60fps con CustomPainter, punto de fijación central siempre visible. Metrónomo (`AudioCue.click`) en cada ciclo/pico. Velocidad: 500–3000 ms (default 1500 ms). Persiste `exercise_type='peripheral_expansion'`.
+Temas: Sistema dinámico Dark/Light/Cyber-Focus seleccionable en el Dashboard. Todos los colores usan `Theme.of(context).colorScheme` — cero colores hardcoded en vistas. Panel inferior compacto (3 filas: selector+ms+mute / slider+selector-duración / back-nav+timer-chip+botón).
+Práctica Libre: todos los ejercicios soportan duración configurable (∞ / 30s / 60s / 2m, default 60s). Timer inline como pill chip en Fila 3 del panel (visible solo durante sesión activa con duración finita). Auto-guardado + `AudioCue.success` al expirar.
 Fecha: 2026-05-14

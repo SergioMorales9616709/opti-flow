@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optiflow/core/theme/app_themes.dart';
 import 'package:optiflow/core/theme/theme_provider.dart';
+import 'package:optiflow/features/vision_training/presentation/views/peripheral_expansion_view.dart';
 import 'package:optiflow/features/vision_training/presentation/views/saccadic_jumps_view.dart';
 import 'package:optiflow/features/vision_training/presentation/views/smooth_pursuit_view.dart';
 
@@ -20,8 +21,10 @@ class VisionDashboardView extends ConsumerWidget {
             ),
             Expanded(
               child: Center(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 24,
+                  runSpacing: 24,
                   children: [
                     _ExerciseCard(
                       title: 'SALTOS\nSACÁDICOS',
@@ -34,7 +37,6 @@ class VisionDashboardView extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(width: 24),
                     _ExerciseCard(
                       title: 'SEGUIMIENTO\nOCULAR',
                       subtitle: '3 patrones · BGM Lo-Fi',
@@ -43,6 +45,17 @@ class VisionDashboardView extends ConsumerWidget {
                         context,
                         MaterialPageRoute(
                           builder: (_) => const SmoothPursuitView(),
+                        ),
+                      ),
+                    ),
+                    _ExerciseCard(
+                      title: 'EXPANSIÓN\nPERIFÉRICA',
+                      subtitle: '3 patrones · fijación central',
+                      iconData: Icons.blur_circular_rounded,
+                      onTap: () => Navigator.push<void>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const PeripheralExpansionView(),
                         ),
                       ),
                     ),
