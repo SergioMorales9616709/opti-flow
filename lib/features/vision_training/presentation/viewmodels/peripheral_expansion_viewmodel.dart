@@ -27,7 +27,7 @@ class PeripheralExpansionState {
     this.pattern = PeripheralPattern.expandingCircles,
     this.status = ExerciseStatus.idle,
     this.speedMs = _defaultSpeedMs,
-    this.isSoundEnabled = true,
+    this.isMuted = false,
     this.minSpeedMs = _minSpeed,
     this.maxSpeedMs = _maxSpeed,
     this.selectedDuration = ExerciseDuration.s60,
@@ -41,7 +41,7 @@ class PeripheralExpansionState {
   final PeripheralPattern pattern;
   final ExerciseStatus status;
   final int speedMs;
-  final bool isSoundEnabled;
+  final bool isMuted;
   final int minSpeedMs;
   final int maxSpeedMs;
   final ExerciseDuration selectedDuration;
@@ -51,7 +51,7 @@ class PeripheralExpansionState {
     PeripheralPattern? pattern,
     ExerciseStatus? status,
     int? speedMs,
-    bool? isSoundEnabled,
+    bool? isMuted,
     ExerciseDuration? selectedDuration,
     Object? timeLeftSeconds = _absent,
   }) {
@@ -59,7 +59,7 @@ class PeripheralExpansionState {
       pattern: pattern ?? this.pattern,
       status: status ?? this.status,
       speedMs: speedMs ?? this.speedMs,
-      isSoundEnabled: isSoundEnabled ?? this.isSoundEnabled,
+      isMuted: isMuted ?? this.isMuted,
       minSpeedMs: minSpeedMs,
       maxSpeedMs: maxSpeedMs,
       selectedDuration: selectedDuration ?? this.selectedDuration,
@@ -98,6 +98,9 @@ class PeripheralExpansionNotifier extends Notifier<PeripheralExpansionState> {
       status: ExerciseStatus.active,
       timeLeftSeconds: seconds,
     );
+    if (!state.isMuted) {
+      ref.read(audioServiceProvider).playBgm();
+    }
     if (seconds != null) {
       _startCountdown();
     }
@@ -106,6 +109,7 @@ class PeripheralExpansionNotifier extends Notifier<PeripheralExpansionState> {
   void stopAndSave() {
     if (state.status != ExerciseStatus.active) return;
     _cancelCountdown();
+    ref.read(audioServiceProvider).stopBgm();
     state = state.copyWith(status: ExerciseStatus.saving);
     _persist();
   }
@@ -120,14 +124,20 @@ class PeripheralExpansionNotifier extends Notifier<PeripheralExpansionState> {
     state = state.copyWith(status: ExerciseStatus.saved);
   }
 
-  void toggleSound() {
-    state = state.copyWith(isSoundEnabled: !state.isSoundEnabled);
+  void toggleMute() {
+    final muted = !state.isMuted;
+    state = state.copyWith(isMuted: muted);
+    final audio = ref.read(audioServiceProvider);
+    if (state.status == ExerciseStatus.active) {
+      muted ? audio.stopBgm() : audio.playBgm();
+    }
   }
 
   void reset() {
     _cancelCountdown();
+    ref.read(audioServiceProvider).stopBgm();
     state = PeripheralExpansionState(
-      isSoundEnabled: state.isSoundEnabled,
+      isMuted: state.isMuted,
       selectedDuration: state.selectedDuration,
     );
   }
@@ -140,6 +150,7 @@ class PeripheralExpansionNotifier extends Notifier<PeripheralExpansionState> {
       if (left <= 1) {
         _countdownTimer?.cancel();
         _countdownTimer = null;
+        ref.read(audioServiceProvider).stopBgm();
         ref.read(audioServiceProvider).play(AudioCue.success);
         stopAndSave();
       } else {
