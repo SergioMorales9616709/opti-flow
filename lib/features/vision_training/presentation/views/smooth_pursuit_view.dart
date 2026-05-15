@@ -61,58 +61,20 @@ class _SmoothPursuitViewState extends ConsumerState<SmoothPursuitView>
 
     return Scaffold(
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Column(
-              children: [
-                Expanded(
-                  child: _StimulusArea(
-                    controller: _controller,
-                    pattern: state.pattern,
-                    status: state.status,
-                  ),
-                ),
-                Divider(
-                  height: 1,
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-                _ControlPanel(state: state, notifier: notifier),
-              ],
-            ),
-            Positioned(
-              top: 8,
-              left: 8,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  IconButton(
-                    tooltip: 'Volver al menú',
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                    onPressed: () {
-                      notifier.reset();
-                      Navigator.pop(context);
-                    },
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: Text(
-                      'Práctica Libre',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ),
-                ],
+            Expanded(
+              child: _StimulusArea(
+                controller: _controller,
+                pattern: state.pattern,
+                status: state.status,
               ),
             ),
+            Divider(
+              height: 1,
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+            _ControlPanel(state: state, notifier: notifier),
           ],
         ),
       ),
@@ -156,7 +118,6 @@ class _StimulusArea extends StatelessWidget {
         if (status == ExerciseStatus.idle) const _IdleOverlay(),
         if (status == ExerciseStatus.saving) const _SavingOverlay(),
         if (status == ExerciseStatus.saved) const _SavedOverlay(),
-        const _SmoothCountdownHud(),
       ],
     );
   }
@@ -314,7 +275,7 @@ class _ControlPanel extends StatelessWidget {
               ),
             ],
           ),
-          // Row 2: slider
+          // Row 2: slider + duration selector
           Row(
             children: [
               Text(
@@ -346,13 +307,7 @@ class _ControlPanel extends StatelessWidget {
                   fontSize: 12,
                 ),
               ),
-            ],
-          ),
-          // Row 3: duration selector + action button
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+              const SizedBox(width: 16),
               SegmentedButton<ExerciseDuration>(
                 segments: ExerciseDuration.values
                     .map((d) => ButtonSegment(value: d, label: Text(d.label)))
@@ -362,7 +317,65 @@ class _ControlPanel extends StatelessWidget {
                     ? null
                     : (s) => notifier.setDuration(s.first),
               ),
-              const SizedBox(width: 16),
+            ],
+          ),
+          // Row 3: back nav + timer chip + action button
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: () {
+                  notifier.reset();
+                  Navigator.pop(context);
+                },
+                icon: const Icon(Icons.arrow_back, size: 16),
+                label: const Text('Práctica Libre'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.45),
+                ),
+              ),
+              const Spacer(),
+              if (isActive &&
+                  state.selectedDuration != ExerciseDuration.infinite &&
+                  state.timeLeftSeconds != null)
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Builder(
+                      builder: (context) {
+                        final t = state.timeLeftSeconds!;
+                        final mm = (t ~/ 60).toString().padLeft(2, '0');
+                        final ss = (t % 60).toString().padLeft(2, '0');
+                        return Text(
+                          '$mm:$ss',
+                          style: TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
               if (!isActive && !isSaved)
                 ElevatedButton.icon(
                   onPressed: isSaving ? null : notifier.startExercise,
@@ -388,51 +401,6 @@ class _ControlPanel extends StatelessWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _SmoothCountdownHud extends ConsumerWidget {
-  const _SmoothCountdownHud();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final status = ref.watch(
-      smoothPursuitProvider.select((s) => s.status),
-    );
-    final duration = ref.watch(
-      smoothPursuitProvider.select((s) => s.selectedDuration),
-    );
-    final timeLeft = ref.watch(
-      smoothPursuitProvider.select((s) => s.timeLeftSeconds),
-    );
-
-    if (status != ExerciseStatus.active ||
-        duration == ExerciseDuration.infinite ||
-        timeLeft == null) {
-      return const SizedBox.shrink();
-    }
-
-    final mm = (timeLeft ~/ 60).toString().padLeft(2, '0');
-    final ss = (timeLeft % 60).toString().padLeft(2, '0');
-
-    return Positioned(
-      top: 24,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Text(
-          '$mm:$ss',
-          style: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 32,
-            fontWeight: FontWeight.w300,
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.5),
-          ),
-        ),
       ),
     );
   }
