@@ -36,7 +36,7 @@ class _PeripheralExpansionViewState
   void _onAnimationStatus(AnimationStatus status) {
     if (status == AnimationStatus.completed) {
       final s = ref.read(peripheralExpansionProvider);
-      if (s.isSoundEnabled && s.status == ExerciseStatus.active) {
+      if (!s.isMuted && s.status == ExerciseStatus.active) {
         _audioService.play(AudioCue.click);
       }
     }
@@ -45,6 +45,7 @@ class _PeripheralExpansionViewState
   @override
   void dispose() {
     _controller.dispose();
+    _audioService.stopBgm();
     super.dispose();
   }
 
@@ -354,18 +355,16 @@ class _ControlPanel extends StatelessWidget {
                 ),
               ),
               IconButton(
-                tooltip: state.isSoundEnabled
-                    ? 'Silenciar metrónomo'
-                    : 'Activar metrónomo',
+                tooltip: state.isMuted ? 'Activar música' : 'Silenciar música',
                 icon: Icon(
-                  state.isSoundEnabled ? Icons.volume_up : Icons.volume_off,
-                  color: state.isSoundEnabled
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(
+                  state.isMuted ? Icons.volume_off : Icons.volume_up,
+                  color: state.isMuted
+                      ? Theme.of(
                           context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.4),
+                        ).colorScheme.onSurface.withValues(alpha: 0.4)
+                      : Theme.of(context).colorScheme.primary,
                 ),
-                onPressed: notifier.toggleSound,
+                onPressed: notifier.toggleMute,
               ),
             ],
           ),
