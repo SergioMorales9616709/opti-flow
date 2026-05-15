@@ -54,6 +54,8 @@ Each feature follows the same layering: `data/` → `domain/` → `presentation/
 
 **Selective rebuilds:** Views use `ref.watch(provider.select((s) => s.field))` to subscribe only to the specific state field they need, avoiding full-tree rebuilds during high-frequency timer updates.
 
+**Animated exercises:** Views that drive animations use `ConsumerStatefulWidget with SingleTickerProviderStateMixin`. The `AnimationController` is created in `initState`, driven by `ref.listen` on the exercise status, and disposed in `dispose`. Geometry-heavy animations use `CustomPainter` inside `AnimatedBuilder`; path-following animations use `Align` with a computed `Alignment`.
+
 **Database:** `DatabaseHelper` is a static singleton initialized once in `main()` before `runApp`. All repositories receive the `Database` instance via `DatabaseHelper.db`. The `sqfliteFfiInit()` call is required for Windows/Linux — do not remove it.
 
 **Layout:** Use `LayoutBuilder` / `MediaQuery` for all sizing. No hardcoded pixel values for layout dimensions.
@@ -66,5 +68,5 @@ Table `user_progress` (file: `optiflow.db`, stored in the app's working director
 |---|---|---|
 | id | INTEGER | PK AUTOINCREMENT |
 | date | TEXT | ISO 8601 |
-| exercise_type | TEXT | e.g. `"saccadic_jumps"` |
+| exercise_type | TEXT | `"saccadic_jumps"`, `"smooth_pursuit"`, `"peripheral_expansion"` |
 | max_speed_ms | INTEGER | milliseconds per jump |

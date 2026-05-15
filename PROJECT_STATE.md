@@ -73,14 +73,15 @@ lib/
 
 **Ejercicio: Expansión Periférica**
 - Patrones: Anillos Expansivos (`expandingCircles`), Marcos Contractivos (`contractingSquares`), Pulso Central (`pulsingTarget`). Enum `PeripheralPattern` en el viewmodel.
-  - Anillos: 4 anillos circulares desfasados (fase 0/0.25/0.5/0.75) nacen del centro y se expanden hacia los bordes, desvaneciéndose.
-  - Marcos: 4 marcos cuadrados desfasados nacen en los bordes y se contraen hacia el centro con fade in/out.
-  - Pulso: un único círculo que crece y se contrae suavemente (`repeat(reverse: true)`).
-- Animación: `AnimationController` en la View (`ConsumerStatefulWidget with SingleTickerProviderStateMixin`). `CustomPainter` atado a `AnimatedBuilder` para renderizado 60fps sin reconstruir el árbol de widgets. Punto de fijación central (punto + cruz suave) dibujado en todas las vistas.
+  - Anillos: UN único círculo nace del centro y se expande hasta `min(w,h)/2 * 0.95`, desvaneciéndose (`opacity = 1 - value`).
+  - Marcos: UN único cuadrado nace en los bordes y se contrae al centro (`half = maxHalf * (1 - value)`), opacidad constante con fade-out en el último 15%.
+  - Pulso: UN único círculo respira usando `sin(value * π)` — `radius = maxRadius * 0.9 * sin(value * π)`. Sin `reverse`, el seno garantiza el ciclo suave dentro de un `repeat()` normal.
+- Animación: `AnimationController` con `repeat()` (todos los patrones). `CustomPainter` atado a `AnimatedBuilder` para renderizado 60fps sin reconstruir el árbol de widgets. Punto de fijación central (punto blanco 5px + cruz 20px, opacidad 1.0) dibujado siempre.
 - Velocidad: 500 ms – 3000 ms por ciclo; valor por defecto 1500 ms. Slider actualiza la duración del `AnimationController` en tiempo real.
-- **Auditory Entrainment (Metrónomo):** `AudioCue.click` en cada `AnimationStatus.completed` (fin de ciclo para anillos/marcos, pico de expansión para pulso). Botón mute en la UI.
+- **BGM (Música de Fondo):** Comparte `AudioService._bgmPlayer` con Seguimiento Ocular. `playBgm()` al iniciar, `stopBgm()` al parar/resetear/salir (`dispose`). `toggleMute()` sincroniza BGM en tiempo real si el ejercicio está activo.
+- **Auditory Entrainment (Metrónomo):** `AudioCue.click` en cada `AnimationStatus.completed` (fin de ciclo). Gateado por `isMuted`. Mismo botón mute controla BGM + metrónomo.
 - Persistencia: guarda `exercise_type = 'peripheral_expansion'` y `max_speed_ms` al finalizar.
-- Práctica Libre: soporta duración configurable (∞ / 30s / 60s / 2m, default 60s). Auto-guardado + `AudioCue.success` al expirar.
+- Práctica Libre: soporta duración configurable (∞ / 30s / 60s / 2m, default 60s). Auto-guardado + `AudioCue.success` al expirar (BGM se detiene antes del success cue).
 
 ---
 
@@ -110,7 +111,7 @@ Navegación: Dashboard Hero → ejercicios con `TextButton.icon` de retroceso en
 Saltos Sacádicos: 6 patrones, metrónomo sincronizado, persiste en SQLite. Extremos a `±0.95`. Velocidad: 300–1200 ms (default 800 ms).
 Seguimiento Ocular: 3 patrones, animación 60fps con AnimatedBuilder, radio al 90% del área. BGM en loop, persiste en SQLite. Velocidad: 1500–5000 ms (default 3000 ms).
 BGM: `AudioService._bgmPlayer` dedicado con `ReleaseMode.loop`. Se detiene al salir/pausar.
-Expansión Periférica: 3 patrones (Anillos/Marcos/Pulso), animación 60fps con CustomPainter, punto de fijación central siempre visible. Metrónomo (`AudioCue.click`) en cada ciclo/pico. Velocidad: 500–3000 ms (default 1500 ms). Persiste `exercise_type='peripheral_expansion'`.
+Expansión Periférica: 3 patrones (Anillos/Marcos/Pulso), figura única por ciclo, `CustomPainter` 60fps, punto de fijación central siempre visible. BGM Lo-Fi en loop + metrónomo (`AudioCue.click`) por ciclo, ambos gateados por botón mute. Velocidad: 500–3000 ms (default 1500 ms). Persiste `exercise_type='peripheral_expansion'`.
 Temas: Sistema dinámico Dark/Light/Cyber-Focus seleccionable en el Dashboard. Todos los colores usan `Theme.of(context).colorScheme` — cero colores hardcoded en vistas. Panel inferior compacto (3 filas: selector+ms+mute / slider+selector-duración / back-nav+timer-chip+botón).
 Práctica Libre: todos los ejercicios soportan duración configurable (∞ / 30s / 60s / 2m, default 60s). Timer inline como pill chip en Fila 3 del panel (visible solo durante sesión activa con duración finita). Auto-guardado + `AudioCue.success` al expirar.
 Fecha: 2026-05-14
