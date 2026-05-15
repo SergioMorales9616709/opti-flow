@@ -49,7 +49,7 @@ lib/
 
 ### Módulo 1: Visión
 
-**Navegación:** `VisionDashboardView` es el home de la app. Presenta dos Hero cards (gradiente + icono fantasma + acento cyan) que navegan con `Navigator.push` a cada ejercicio. Cada ejercicio tiene botón flotante de retroceso (`Stack + Positioned + IconButton`) sin AppBar para máxima inmersión.
+**Navegación:** `VisionDashboardView` es el home de la app. Presenta dos Hero cards (gradiente + icono fantasma + acento cyan) que navegan con `Navigator.push` a cada ejercicio. Cada ejercicio tiene `TextButton.icon` de retroceso integrado en el panel de control (sin AppBar, sin overlays flotantes).
 
 **Ejercicio: Saltos Sacádicos**
 - Patrones: Horizontal, Vertical, Patrón Z, Patrón N, Cruz, Diagonal X (enum `SaccadicPattern` en `domain/`).
@@ -94,10 +94,10 @@ lib/
 ## Módulo 1 — Versión 7 ✅
 
 `flutter analyze` reporta **0 issues**. 38 tests pasando.
-Navegación: Dashboard Hero → ejercicios con botón flotante (sin AppBar).
+Navegación: Dashboard Hero → ejercicios con `TextButton.icon` de retroceso en panel de control (sin AppBar, layout `Column` sin overlays).
 Saltos Sacádicos: 6 patrones, metrónomo sincronizado, persiste en SQLite. Extremos a `±0.95`. Velocidad: 300–1200 ms (default 800 ms).
 Seguimiento Ocular: 3 patrones, animación 60fps con AnimatedBuilder, radio al 90% del área. BGM en loop, persiste en SQLite. Velocidad: 1500–5000 ms (default 3000 ms).
 BGM: `AudioService._bgmPlayer` dedicado con `ReleaseMode.loop`. Se detiene al salir/pausar.
-Temas: Sistema dinámico Dark/Light/Cyber-Focus seleccionable en el Dashboard (IconButtons 🌙/☀️/⚡). Todos los colores de las vistas usan `Theme.of(context).colorScheme` — cero colores hardcoded en vistas. Panel inferior compacto (3 filas: selector+ms+mute / slider / botón).
-Práctica Libre: ambos ejercicios soportan duración configurable (∞ / 30s / 60s / 2m, default 60s). Countdown HUD flotante al 50% de opacidad centrado en el área de ejercicio. Auto-guardado + `AudioCue.success` al expirar. Panel compacto: selector de duración en Fila 3 junto al botón de acción (SizedBox 16px de separación). Label "Práctica Libre" junto al botón de retroceso.
-Fecha: 2026-05-05
+Temas: Sistema dinámico Dark/Light/Cyber-Focus seleccionable en el Dashboard (IconButtons 🌙/☀️/⚡). Todos los colores de las vistas usan `Theme.of(context).colorScheme` — cero colores hardcoded en vistas. Panel inferior compacto (3 filas: selector+ms+mute / slider+selector-duración / back-nav+timer-chip+botón).
+Práctica Libre: ambos ejercicios soportan duración configurable (∞ / 30s / 60s / 2m, default 60s). Timer inline como pill chip en Fila 3 del panel (visible solo durante sesión activa con duración finita). Auto-guardado + `AudioCue.success` al expirar. Back nav como `TextButton.icon("Práctica Libre")` a la izquierda de Fila 3. Layout: `Column` puro — sin `Stack`/`Positioned`.
+Fecha: 2026-05-14
