@@ -23,6 +23,7 @@ enum ExerciseDuration {
 class _Absent {
   const _Absent();
 }
+
 const _absent = _Absent();
 
 enum ExerciseStatus { idle, active, saving, saved }

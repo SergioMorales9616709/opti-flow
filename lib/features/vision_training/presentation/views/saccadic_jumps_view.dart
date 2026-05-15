@@ -10,49 +10,14 @@ class SaccadicJumpsView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: SafeArea(
-        child: Stack(
+        child: Column(
           children: [
-            Column(
-              children: [
-                const Expanded(child: _ExerciseArea()),
-                Divider(
-                  height: 1,
-                  color: Theme.of(context).colorScheme.outlineVariant,
-                ),
-                const _ControlPanel(),
-              ],
+            const Expanded(child: _ExerciseArea()),
+            Divider(
+              height: 1,
+              color: Theme.of(context).colorScheme.outlineVariant,
             ),
-            Positioned(
-              top: 8,
-              left: 8,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  IconButton(
-                    tooltip: 'Volver al menú',
-                    icon: Icon(
-                      Icons.arrow_back,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.onSurface.withValues(alpha: 0.5),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 12),
-                    child: Text(
-                      'Práctica Libre',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Theme.of(
-                          context,
-                        ).colorScheme.onSurface.withValues(alpha: 0.4),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            const _ControlPanel(),
           ],
         ),
       ),
@@ -97,7 +62,6 @@ class _ExerciseArea extends ConsumerWidget {
         ),
         if (status == ExerciseStatus.idle) const _IdleOverlay(),
         if (status == ExerciseStatus.saved) const _SavedOverlay(),
-        const _CountdownHud(),
       ],
     );
   }
@@ -272,7 +236,7 @@ class _ControlPanel extends ConsumerWidget {
               ),
             ],
           ),
-          // Row 2: slider
+          // Row 2: slider + duration selector
           Row(
             children: [
               Text(
@@ -304,13 +268,7 @@ class _ControlPanel extends ConsumerWidget {
                   fontSize: 12,
                 ),
               ),
-            ],
-          ),
-          // Row 3: duration selector + action button
-          const SizedBox(height: 4),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
+              const SizedBox(width: 16),
               SegmentedButton<ExerciseDuration>(
                 segments: ExerciseDuration.values
                     .map((d) => ButtonSegment(value: d, label: Text(d.label)))
@@ -324,7 +282,66 @@ class _ControlPanel extends ConsumerWidget {
                     ? null
                     : (s) => notifier.setDuration(s.first),
               ),
-              const SizedBox(width: 16),
+            ],
+          ),
+          // Row 3: back nav + timer chip + action button
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              TextButton.icon(
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, size: 16),
+                label: const Text('Práctica Libre'),
+                style: TextButton.styleFrom(
+                  foregroundColor: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.45),
+                ),
+              ),
+              const Spacer(),
+              Builder(
+                builder: (_) {
+                  final selectedDuration = ref.watch(
+                    saccadicJumpsProvider.select((s) => s.selectedDuration),
+                  );
+                  final timeLeft = ref.watch(
+                    saccadicJumpsProvider.select((s) => s.timeLeftSeconds),
+                  );
+                  if (!isActive ||
+                      selectedDuration == ExerciseDuration.infinite ||
+                      timeLeft == null) {
+                    return const SizedBox.shrink();
+                  }
+                  final mm = (timeLeft ~/ 60).toString().padLeft(2, '0');
+                  final ss = (timeLeft % 60).toString().padLeft(2, '0');
+                  final cs = Theme.of(context).colorScheme;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cs.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: cs.primary.withValues(alpha: 0.3),
+                        ),
+                      ),
+                      child: Text(
+                        '$mm:$ss',
+                        style: TextStyle(
+                          fontFamily: 'monospace',
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: cs.primary,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
               if (!isActive && !isSaved)
                 ElevatedButton.icon(
                   onPressed: isSaving ? null : notifier.startExercise,
@@ -350,54 +367,6 @@ class _ControlPanel extends ConsumerWidget {
             ],
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _CountdownHud extends ConsumerWidget {
-  const _CountdownHud();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final status = ref.watch(
-      saccadicJumpsProvider.select((s) => s.status),
-    );
-    final duration = ref.watch(
-      saccadicJumpsProvider.select((s) => s.selectedDuration),
-    );
-    final timeLeft = ref.watch(
-      saccadicJumpsProvider.select((s) => s.timeLeftSeconds),
-    );
-
-    if (status != ExerciseStatus.active ||
-        duration == ExerciseDuration.infinite ||
-        timeLeft == null) {
-      return const SizedBox.shrink();
-    }
-
-    final minutes = timeLeft ~/ 60;
-    final seconds = timeLeft % 60;
-    final mm = minutes.toString().padLeft(2, '0');
-    final ss = seconds.toString().padLeft(2, '0');
-    final label = '$mm:$ss';
-
-    return Positioned(
-      top: 24,
-      left: 0,
-      right: 0,
-      child: Center(
-        child: Text(
-          label,
-          style: TextStyle(
-            fontFamily: 'monospace',
-            fontSize: 32,
-            fontWeight: FontWeight.w300,
-            color: Theme.of(
-              context,
-            ).colorScheme.onSurface.withValues(alpha: 0.5),
-          ),
-        ),
       ),
     );
   }

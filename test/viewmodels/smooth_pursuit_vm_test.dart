@@ -33,15 +33,11 @@ class _FakeProgressRepository implements ProgressRepository {
 }
 
 ProviderContainer _makeContainer({AudioService? audio}) => ProviderContainer(
-      overrides: [
-        audioServiceProvider.overrideWithValue(
-          audio ?? _FakeAudioService(),
-        ),
-        progressRepositoryProvider.overrideWithValue(
-          _FakeProgressRepository(),
-        ),
-      ],
-    );
+  overrides: [
+    audioServiceProvider.overrideWithValue(audio ?? _FakeAudioService()),
+    progressRepositoryProvider.overrideWithValue(_FakeProgressRepository()),
+  ],
+);
 
 void main() {
   group('SmoothPursuitNotifier initial state', () {
@@ -109,15 +105,9 @@ void main() {
             .setDuration(ExerciseDuration.s30);
         container.read(smoothPursuitProvider.notifier).startExercise();
 
-        expect(
-          container.read(smoothPursuitProvider).timeLeftSeconds,
-          30,
-        );
+        expect(container.read(smoothPursuitProvider).timeLeftSeconds, 30);
         async.elapse(const Duration(seconds: 1));
-        expect(
-          container.read(smoothPursuitProvider).timeLeftSeconds,
-          29,
-        );
+        expect(container.read(smoothPursuitProvider).timeLeftSeconds, 29);
       });
     });
 
@@ -131,10 +121,7 @@ void main() {
         container.read(smoothPursuitProvider.notifier).startExercise();
 
         async.elapse(const Duration(seconds: 5));
-        expect(
-          container.read(smoothPursuitProvider).timeLeftSeconds,
-          isNull,
-        );
+        expect(container.read(smoothPursuitProvider).timeLeftSeconds, isNull);
       });
     });
 
