@@ -1,6 +1,6 @@
 # OptiFlow
 
-Aplicación de escritorio para entrenamiento visual cognitivo. Diseñada para desarrollar y mantener la agilidad ocular mediante ejercicios de saltos sacádicos y seguimiento ocular suave.
+Aplicación de escritorio para entrenamiento visual cognitivo. Diseñada para desarrollar y mantener la agilidad ocular mediante tres ejercicios del Módulo de Visión: saltos sacádicos, seguimiento ocular suave y expansión periférica.
 
 Construida con Flutter para Windows y Linux.
 
@@ -21,9 +21,18 @@ El ojo salta entre estímulos visuales distribuidos en patrones geométricos. En
 
 Un estímulo se desplaza de forma continua siguiendo trayectorias geométricas. Entrena la suavidad y estabilidad del seguimiento.
 
-- 3 patrones de trayectoria (circular, elíptico, figura 8)
+- 3 patrones de trayectoria (círculo, infinito, horizontal)
 - Velocidad de ciclo ajustable
 - Música lo-fi de fondo para el ambiente de entrenamiento
+- Registro del progreso al finalizar
+
+### Expansión Periférica
+
+El usuario fija la vista en un punto central mientras figuras geométricas se expanden o contraen desde y hacia los bordes de la pantalla. Entrena la amplitud del campo visual periférico.
+
+- 3 patrones (anillos expansivos, marcos contractivos, pulso central)
+- Figura única por ciclo para evitar fatiga visual por efecto túnel
+- Música lo-fi de fondo + metrónomo sincronizado con el ciclo
 - Registro del progreso al finalizar
 
 ---
@@ -57,7 +66,7 @@ flutter run -d linux
 
 | Capa              | Tecnología                               |
 | ----------------- | ---------------------------------------- |
-| UI                | Flutter (Material 3, tema oscuro)        |
+| UI                | Flutter (Material 3, temas Dark/Light/Cyber) |
 | Estado            | flutter_riverpod 2.x                     |
 | Base de datos     | sqflite_common_ffi (SQLite para desktop) |
 | Audio             | audioplayers                             |
