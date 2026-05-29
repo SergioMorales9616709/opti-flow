@@ -109,6 +109,7 @@ lib/
 | 12   | Expansión Periférica: CustomPainter + metrónomo por ciclo + Dashboard Wrap | ✅ Completado |
 | 13   | Módulo 2: Motor de Textos (TextRepository) + Modo RSVP + MainDashboard     | ✅ Completado |
 | 14   | RSVP Pro: Chunking + ORP rendering + OrpTextDisplay + Roboto Mono          | ✅ Completado |
+| 15   | Módulo 2 Iter. 3: Modo Líneas Resaltadas (GuidedLines) + TextPainter paginador | ✅ Completado |
 
 ---
 
@@ -151,4 +152,17 @@ Fecha: 2026-05-14
 - `OrpTextDisplay`: widget stateless con `Column(mira, Row(Expanded left · orpLetter cyan · Expanded right), mira)`. NBSP (` `) en `safeLeft`/`safeRight` evita que Flutter recorte espacios en texto alineado. Font: `GoogleFonts.robotoMono(fontSize:64, fontWeight:w800)`.
 - `google_fonts: ^8.1.0` añadido al pubspec.
 - `flutter analyze`: 0 issues. **94 tests pasando** (30 nuevos de dominio).
+Fecha: 2026-05-28
+
+## Módulo 2 — Lectura Veloz (Iteración 3) ✅
+
+`flutter analyze` reporta **0 issues**. **~117 tests pasando** (17 nuevos).
+
+**Modo Líneas Resaltadas (GuidedLines):**
+- `features/speed_reading/domain/text_pagination_utils.dart`: `paginateTextIntoLines()` — función pura que usa `TextPainter` para calcular el ancho exacto de cada línea según el `maxWidth` y `TextStyle` de la vista. Respeta saltos de párrafo (`\n`). Reutiliza un único `TextPainter` para eficiencia.
+- `GuidedLinesNotifier` (Riverpod 2.x `Notifier`): mismo patrón async loop + `_running` que RSVP. Timing por línea: `(60000 ~/ wpm) * wordCount`. `_rawText` almacenado internamente; `paginate(maxWidth, style)` llamado desde la vista una vez que el layout conoce su ancho.
+- `GuidedLinesView` (`ConsumerStatefulWidget`): `LayoutBuilder` + `addPostFrameCallback` para paginación one-shot. Auto-scroll via `ref.listen` en `currentLineIndex` → `ScrollController.animateTo`. Panel de control inferior idéntico al RSVP (WPM slider 200–1200, botón mute, botón atrás, barra de progreso, play/pause).
+- Línea activa: fuente 32px, peso w600, color `primary`, fondo `primary.withOpacity(0.08)`. Líneas inactivas: `onSurface.withOpacity(0.3)`, peso w400.
+- Persistencia: `exercise_type='speed_reading_guided_lines'`, `max_speed_ms=currentWpm`.
+- Dashboard: segunda tarjeta en sección "LECTURA VELOZ" → `GuidedLinesView`.
 Fecha: 2026-05-28
