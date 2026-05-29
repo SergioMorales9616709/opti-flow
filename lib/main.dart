@@ -4,7 +4,7 @@ import 'package:optiflow/core/database/database_helper.dart';
 import 'package:optiflow/core/theme/app_themes.dart';
 import 'package:optiflow/core/theme/theme_provider.dart';
 import 'package:optiflow/core/utils/audio_service.dart';
-import 'package:optiflow/features/vision_training/presentation/views/vision_dashboard_view.dart';
+import 'package:optiflow/features/dashboard/presentation/views/main_dashboard_view.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -31,7 +31,7 @@ class OptiFlowApp extends ConsumerWidget {
       title: 'OptiFlow',
       debugShowCheckedModeBanner: false,
       theme: AppThemes.themeData(appTheme),
-      home: const VisionDashboardView(),
+      home: const MainDashboardView(),
     );
   }
 }

@@ -33,6 +33,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_riverpod: ^2.6.1
+  google_fonts: ^8.1.0
   sqflite_common_ffi: ^2.3.4+1
 
 dev_dependencies:
@@ -60,6 +61,7 @@ flutter:
 
   assets:
     - assets/audio/
+    - assets/texts/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
