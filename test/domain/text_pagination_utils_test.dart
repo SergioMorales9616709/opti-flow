@@ -68,7 +68,7 @@ void main() {
       for (final line in lines) {
         painter
           ..text = TextSpan(text: line, style: style)
-          ..layout(maxWidth: double.infinity);
+          ..layout();
         expect(painter.size.width, lessThanOrEqualTo(maxW + 1),
             reason: 'Line "$line" exceeds maxWidth');
       }

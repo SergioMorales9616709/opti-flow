@@ -23,7 +23,7 @@ List<String> paginateTextIntoLines({
       final candidate = currentLine.isEmpty ? word : '$currentLine $word';
       painter
         ..text = TextSpan(text: candidate, style: style)
-        ..layout(maxWidth: double.infinity);
+        ..layout();
 
       if (painter.size.width > maxWidth && currentLine.isNotEmpty) {
         result.add(currentLine);
