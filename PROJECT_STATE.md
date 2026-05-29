@@ -22,12 +22,18 @@ lib/
 │   ├── theme/          # Sistema de temas dinámico (Dark/Light/Cyber) — AppThemes, ThemeNotifier
 │   └── utils/          # AudioCue (Enhanced Enum), AudioService + audioServiceProvider
 ├── features/
-│   └── vision_training/
-│       ├── data/       # Modelos de datos, DTOs
-│       ├── domain/     # Entidades, contratos de repositorio
+│   ├── dashboard/      # Hub principal de la app (MainDashboardView)
+│   │   └── presentation/views/
+│   ├── vision_training/
+│   │   ├── domain/     # Entidades, contratos de repositorio
+│   │   └── presentation/
+│   │       ├── viewmodels/
+│   │       └── views/
+│   └── speed_reading/
+│       ├── data/       # TextRepository + parseTextToWords
 │       └── presentation/
-│           ├── viewmodels/   # Riverpod Notifiers (lógica de UI)
-│           └── views/        # Widgets / pantallas
+│           ├── viewmodels/   # RsvpNotifier + pauseMsFor
+│           └── views/        # RsvpView
 └── main.dart
 ```
 
@@ -101,6 +107,7 @@ lib/
 | 10   | Sistema de Temas Dinámico (Dark, Light, Cyber-Focus) con Riverpod    | ✅ Completado |
 | 11   | Temporizador de Práctica Libre: countdown + auto-guardado + success cue | ✅ Completado |
 | 12   | Expansión Periférica: CustomPainter + metrónomo por ciclo + Dashboard Wrap | ✅ Completado |
+| 13   | Módulo 2: Motor de Textos (TextRepository) + Modo RSVP + MainDashboard     | ✅ Completado |
 
 ---
 
@@ -115,3 +122,25 @@ Expansión Periférica: 3 patrones (Anillos/Marcos/Pulso), figura única por cic
 Temas: Sistema dinámico Dark/Light/Cyber-Focus seleccionable en el Dashboard. Todos los colores usan `Theme.of(context).colorScheme` — cero colores hardcoded en vistas. Panel inferior compacto (3 filas: selector+ms+mute / slider+selector-duración / back-nav+timer-chip+botón).
 Práctica Libre: todos los ejercicios soportan duración configurable (∞ / 30s / 60s / 2m, default 60s). Timer inline como pill chip en Fila 3 del panel (visible solo durante sesión activa con duración finita). Auto-guardado + `AudioCue.success` al expirar.
 Fecha: 2026-05-14
+
+---
+
+## Módulo 2 — Lectura Veloz (Iteración 1) ✅
+
+`flutter analyze` reporta **0 issues**. **64 tests pasando** (26 nuevos).
+
+**Arquitectura:**
+- Dashboard: `VisionDashboardView` movido a `features/dashboard/presentation/views/main_dashboard_view.dart` como `MainDashboardView`. Hub principal con dos secciones: "ENTRENAMIENTO VISUAL" (3 cards) y "LECTURA VELOZ" (1 card RSVP). `main.dart` actualizado.
+- `features/speed_reading/data/text_repository.dart`: `parseTextToWords(String raw)` (top-level, testeable) + `TextRepositoryImpl` que carga desde `assets/texts/` con `rootBundle`.
+- `pubspec.yaml`: `assets/texts/` registrado.
+
+**Modo RSVP:**
+- `RsvpNotifier` (Riverpod 2.x `Notifier`): async loop con `Future.delayed` — el WPM se ajusta en tiempo real leyendo el estado en cada iteración; sin necesidad de cancelar/recrear timers.
+- `_running = false` en `ref.onDispose` (referencia capturada antes del dispose) garantiza que el loop muere limpiamente al salir con el botón Atrás.
+- Pausas dinámicas (`pauseMsFor`): `,` → ×1.5; `.` `:` `?` `!` `;` → ×2.5. Neuro-lectura: micro-pausas cognitivas en fronteras de idea.
+- WPM: 200–1200 (default 300). Slider ajusta en tiempo real durante la lectura.
+- Audio: `AudioService.playBgm()` al iniciar, `stopBgm()` al pausar/terminar/salir.
+- Persistencia: `exercise_type='speed_reading_rsvp'`, `max_speed_ms=currentWpm` al pausar o al completar el texto.
+- Vista: `ConsumerWidget` puro (sin `AnimationController`). Panel inferior de 3 filas: WPM+Mute / Slider / Atrás+ProgressBar+Play. 100% `Theme.of(context).colorScheme`.
+- Texto: `assets/texts/cuento_1.txt` (~886 palabras).
+Fecha: 2026-05-28

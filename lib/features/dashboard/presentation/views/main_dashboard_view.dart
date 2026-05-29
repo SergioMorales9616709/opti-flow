@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optiflow/core/theme/app_themes.dart';
 import 'package:optiflow/core/theme/theme_provider.dart';
+import 'package:optiflow/features/speed_reading/presentation/views/rsvp_view.dart';
 import 'package:optiflow/features/vision_training/presentation/views/peripheral_expansion_view.dart';
 import 'package:optiflow/features/vision_training/presentation/views/saccadic_jumps_view.dart';
 import 'package:optiflow/features/vision_training/presentation/views/smooth_pursuit_view.dart';
 
-class VisionDashboardView extends ConsumerWidget {
-  const VisionDashboardView({super.key});
+class MainDashboardView extends ConsumerWidget {
+  const MainDashboardView({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final cs = Theme.of(context).colorScheme;
     return Scaffold(
       body: SafeArea(
         child: Column(
@@ -20,51 +22,110 @@ class VisionDashboardView extends ConsumerWidget {
               notifier: ref.read(themeProvider.notifier),
             ),
             Expanded(
-              child: Center(
-                child: Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 24,
-                  runSpacing: 24,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 32,
+                  horizontal: 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ExerciseCard(
-                      title: 'SALTOS\nSACÁDICOS',
-                      subtitle: '6 patrones · metrónomo',
-                      iconData: Icons.compare_arrows,
-                      onTap: () => Navigator.push<void>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SaccadicJumpsView(),
+                    // ── Section: Visual Training ───────────────────────────
+                    _SectionLabel(label: 'ENTRENAMIENTO VISUAL', cs: cs),
+                    const SizedBox(height: 20),
+                    Wrap(
+                      spacing: 24,
+                      runSpacing: 24,
+                      children: [
+                        _ExerciseCard(
+                          title: 'SALTOS\nSACÁDICOS',
+                          subtitle: '6 patrones · metrónomo',
+                          iconData: Icons.compare_arrows,
+                          onTap: () => Navigator.push<void>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SaccadicJumpsView(),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    _ExerciseCard(
-                      title: 'SEGUIMIENTO\nOCULAR',
-                      subtitle: '3 patrones · BGM Lo-Fi',
-                      iconData: Icons.track_changes,
-                      onTap: () => Navigator.push<void>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const SmoothPursuitView(),
+                        _ExerciseCard(
+                          title: 'SEGUIMIENTO\nOCULAR',
+                          subtitle: '3 patrones · BGM Lo-Fi',
+                          iconData: Icons.track_changes,
+                          onTap: () => Navigator.push<void>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const SmoothPursuitView(),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    _ExerciseCard(
-                      title: 'EXPANSIÓN\nPERIFÉRICA',
-                      subtitle: '3 patrones · fijación central',
-                      iconData: Icons.blur_circular_rounded,
-                      onTap: () => Navigator.push<void>(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) => const PeripheralExpansionView(),
+                        _ExerciseCard(
+                          title: 'EXPANSIÓN\nPERIFÉRICA',
+                          subtitle: '3 patrones · fijación central',
+                          iconData: Icons.blur_circular_rounded,
+                          onTap: () => Navigator.push<void>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const PeripheralExpansionView(),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
+
+                    const SizedBox(height: 40),
+
+                    // ── Section: Speed Reading ─────────────────────────────
+                    _SectionLabel(label: 'LECTURA VELOZ', cs: cs),
+                    const SizedBox(height: 20),
+                    Wrap(
+                      spacing: 24,
+                      runSpacing: 24,
+                      children: [
+                        _ExerciseCard(
+                          title: 'RSVP\nVELOCIDAD',
+                          subtitle: 'Lectura serial · pausas dinámicas',
+                          iconData: Icons.speed,
+                          onTap: () => Navigator.push<void>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const RsvpView(),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 32),
                   ],
                 ),
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Section label
+// ---------------------------------------------------------------------------
+class _SectionLabel extends StatelessWidget {
+  const _SectionLabel({required this.label, required this.cs});
+
+  final String label;
+  final ColorScheme cs;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      label,
+      style: TextStyle(
+        color: cs.onSurface.withValues(alpha: 0.35),
+        fontSize: 11,
+        letterSpacing: 4,
+        fontWeight: FontWeight.w500,
       ),
     );
   }
@@ -87,13 +148,15 @@ class _AppHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.35)),
+          bottom: BorderSide(
+            color: cs.outlineVariant.withValues(alpha: 0.35),
+          ),
         ),
       ),
       child: Row(
         children: [
           Text(
-            'ENTRENAMIENTO VISUAL',
+            'OPTIFLOW',
             style: TextStyle(
               color: cs.onSurface.withValues(alpha: 0.35),
               fontSize: 11,
@@ -130,7 +193,6 @@ class _ThemeSelector extends StatelessWidget {
           currentTheme: currentTheme,
           activeIcon: Icons.dark_mode,
           inactiveIcon: Icons.dark_mode_outlined,
-          label: 'OSCURO',
           tooltip: 'Oscuro',
           notifier: notifier,
           colorScheme: cs,
@@ -141,7 +203,6 @@ class _ThemeSelector extends StatelessWidget {
           currentTheme: currentTheme,
           activeIcon: Icons.light_mode,
           inactiveIcon: Icons.light_mode_outlined,
-          label: 'CLARO',
           tooltip: 'Claro',
           notifier: notifier,
           colorScheme: cs,
@@ -152,7 +213,6 @@ class _ThemeSelector extends StatelessWidget {
           currentTheme: currentTheme,
           activeIcon: Icons.electric_bolt,
           inactiveIcon: Icons.electric_bolt_outlined,
-          label: 'CYBER',
           tooltip: 'Cyber',
           notifier: notifier,
           colorScheme: cs,
@@ -168,7 +228,6 @@ class _ThemeButton extends StatelessWidget {
     required this.currentTheme,
     required this.activeIcon,
     required this.inactiveIcon,
-    required this.label,
     required this.tooltip,
     required this.notifier,
     required this.colorScheme,
@@ -178,7 +237,6 @@ class _ThemeButton extends StatelessWidget {
   final AppTheme currentTheme;
   final IconData activeIcon;
   final IconData inactiveIcon;
-  final String label;
   final String tooltip;
   final ThemeNotifier notifier;
   final ColorScheme colorScheme;
