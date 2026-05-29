@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optiflow/core/database/progress_repository.dart';
 import 'package:optiflow/core/utils/audio_service.dart';
 import 'package:optiflow/features/speed_reading/data/text_repository.dart';
+import 'package:optiflow/features/speed_reading/domain/neuro_reading_utils.dart';
 
 const _kDefaultWpm = 300;
 const _kMinWpm = 200;
@@ -80,10 +81,10 @@ class RsvpNotifier extends Notifier<RsvpState> {
   }
 
   Future<void> _loadText() async {
-    final words = await ref
+    final rawWords = await ref
         .read(textRepositoryProvider)
         .loadWords(_kAssetPath);
-    state = state.copyWith(words: words, isLoaded: true);
+    state = state.copyWith(words: chunkWords(rawWords), isLoaded: true);
   }
 
   void setWpm(int wpm) {
@@ -134,10 +135,12 @@ class RsvpNotifier extends Notifier<RsvpState> {
   }
 
   Future<void> _persist() async {
-    await ref.read(progressRepositoryProvider).saveProgress(
-      exerciseType: 'speed_reading_rsvp',
-      maxSpeedMs: state.currentWpm,
-    );
+    await ref
+        .read(progressRepositoryProvider)
+        .saveProgress(
+          exerciseType: 'speed_reading_rsvp',
+          maxSpeedMs: state.currentWpm,
+        );
   }
 }
 

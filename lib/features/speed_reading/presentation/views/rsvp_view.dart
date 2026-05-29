@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:optiflow/features/speed_reading/domain/neuro_reading_utils.dart';
 import 'package:optiflow/features/speed_reading/presentation/viewmodels/rsvp_viewmodel.dart';
 
 class RsvpView extends ConsumerWidget {
@@ -16,12 +18,11 @@ class RsvpView extends ConsumerWidget {
     final words = ref.watch(rsvpProvider.select((s) => s.words));
 
     final notifier = ref.read(rsvpProvider.notifier);
-    final progress =
-        words.isEmpty ? 0.0 : currentIndex / words.length;
+    final progress = words.isEmpty ? 0.0 : currentIndex / words.length;
     final currentWord =
         (isLoaded && words.isNotEmpty && currentIndex < words.length)
-            ? words[currentIndex]
-            : '';
+        ? words[currentIndex]
+        : '';
 
     return Scaffold(
       body: SafeArea(
@@ -31,16 +32,7 @@ class RsvpView extends ConsumerWidget {
             Expanded(
               child: Center(
                 child: isLoaded
-                    ? Text(
-                        currentWord,
-                        style: TextStyle(
-                          fontSize: 64,
-                          fontWeight: FontWeight.bold,
-                          color: cs.onSurface,
-                          letterSpacing: 1.5,
-                        ),
-                        textAlign: TextAlign.center,
-                      )
+                    ? OrpTextDisplay(chunk: currentWord)
                     : CircularProgressIndicator(color: cs.primary),
               ),
             ),
@@ -114,10 +106,10 @@ class RsvpView extends ConsumerWidget {
                           padding: const EdgeInsets.symmetric(horizontal: 12),
                           child: LinearProgressIndicator(
                             value: progress,
-                            backgroundColor:
-                                cs.surfaceContainerHighest,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(cs.primary),
+                            backgroundColor: cs.surfaceContainerHighest,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              cs.primary,
+                            ),
                             borderRadius: BorderRadius.circular(4),
                             minHeight: 6,
                           ),
@@ -126,8 +118,8 @@ class RsvpView extends ConsumerWidget {
                       IconButton(
                         onPressed: isLoaded
                             ? () => isPlaying
-                                ? notifier.pause()
-                                : notifier.startReading()
+                                  ? notifier.pause()
+                                  : notifier.startReading()
                             : null,
                         icon: Icon(
                           isPlaying ? Icons.pause : Icons.play_arrow,
@@ -144,6 +136,72 @@ class RsvpView extends ConsumerWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ORP display widget
+// ---------------------------------------------------------------------------
+
+class OrpTextDisplay extends StatelessWidget {
+  const OrpTextDisplay({required this.chunk, super.key});
+
+  final String chunk;
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final parts = getOrpParts(chunk);
+    final guideColor = cs.onSurface.withValues(alpha: 0.3);
+
+    // Non-breaking spaces prevent Flutter from trimming trailing/leading
+    // whitespace when text is right- or left-aligned inside an Expanded.
+    final safeLeft = parts.left.replaceAll(' ', ' ');
+    final safeRight = parts.right.replaceAll(' ', ' ');
+
+    final baseStyle = GoogleFonts.robotoMono(
+      fontSize: 64,
+      fontWeight: FontWeight.w800,
+      color: cs.onSurface,
+    );
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Top focus guide mark
+        Container(width: 2, height: 10, color: guideColor),
+        const SizedBox(height: 6),
+
+        // ORP row — left | orp letter | right
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                safeLeft,
+                textAlign: TextAlign.right,
+                style: baseStyle,
+                maxLines: 1,
+                overflow: TextOverflow.visible,
+              ),
+            ),
+            Text(parts.orp, style: baseStyle.copyWith(color: cs.primary)),
+            Expanded(
+              child: Text(
+                safeRight,
+                textAlign: TextAlign.left,
+                style: baseStyle,
+                maxLines: 1,
+                overflow: TextOverflow.visible,
+              ),
+            ),
+          ],
+        ),
+
+        const SizedBox(height: 6),
+        // Bottom focus guide mark
+        Container(width: 2, height: 10, color: guideColor),
+      ],
     );
   }
 }

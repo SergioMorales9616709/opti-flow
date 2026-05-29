@@ -108,6 +108,7 @@ lib/
 | 11   | Temporizador de Práctica Libre: countdown + auto-guardado + success cue | ✅ Completado |
 | 12   | Expansión Periférica: CustomPainter + metrónomo por ciclo + Dashboard Wrap | ✅ Completado |
 | 13   | Módulo 2: Motor de Textos (TextRepository) + Modo RSVP + MainDashboard     | ✅ Completado |
+| 14   | RSVP Pro: Chunking + ORP rendering + OrpTextDisplay + Roboto Mono          | ✅ Completado |
 
 ---
 
@@ -134,13 +135,20 @@ Fecha: 2026-05-14
 - `features/speed_reading/data/text_repository.dart`: `parseTextToWords(String raw)` (top-level, testeable) + `TextRepositoryImpl` que carga desde `assets/texts/` con `rootBundle`.
 - `pubspec.yaml`: `assets/texts/` registrado.
 
-**Modo RSVP:**
+**Modo RSVP (Iteración 1):**
 - `RsvpNotifier` (Riverpod 2.x `Notifier`): async loop con `Future.delayed` — el WPM se ajusta en tiempo real leyendo el estado en cada iteración; sin necesidad de cancelar/recrear timers.
 - `_running = false` en `ref.onDispose` (referencia capturada antes del dispose) garantiza que el loop muere limpiamente al salir con el botón Atrás.
 - Pausas dinámicas (`pauseMsFor`): `,` → ×1.5; `.` `:` `?` `!` `;` → ×2.5. Neuro-lectura: micro-pausas cognitivas en fronteras de idea.
 - WPM: 200–1200 (default 300). Slider ajusta en tiempo real durante la lectura.
 - Audio: `AudioService.playBgm()` al iniciar, `stopBgm()` al pausar/terminar/salir.
 - Persistencia: `exercise_type='speed_reading_rsvp'`, `max_speed_ms=currentWpm` al pausar o al completar el texto.
-- Vista: `ConsumerWidget` puro (sin `AnimationController`). Panel inferior de 3 filas: WPM+Mute / Slider / Atrás+ProgressBar+Play. 100% `Theme.of(context).colorScheme`.
 - Texto: `assets/texts/cuento_1.txt` (~886 palabras).
+
+**RSVP Pro — Chunking + ORP (Iteración 2):**
+- Capa de dominio: `features/speed_reading/domain/neuro_reading_utils.dart` — funciones puras sin dependencias Flutter/Riverpod.
+- `chunkWords(List<String>)`: pase único izquierda→derecha; palabras ≤3 chars sin puntuación mayor se fusionan con la siguiente. La pausa dinámica sigue funcionando porque `pauseMsFor` evalúa el último char del chunk completo.
+- `getOrpParts(String)`: cuenta chars sin espacio para el índice ORP (tabla de 5 rangos), mapea el índice de vuelta al string completo preservando espacios en `left`/`right`. Retorna `OrpParts` (Dart record).
+- `OrpTextDisplay`: widget stateless con `Column(mira, Row(Expanded left · orpLetter cyan · Expanded right), mira)`. NBSP (` `) en `safeLeft`/`safeRight` evita que Flutter recorte espacios en texto alineado. Font: `GoogleFonts.robotoMono(fontSize:64, fontWeight:w800)`.
+- `google_fonts: ^8.1.0` añadido al pubspec.
+- `flutter analyze`: 0 issues. **94 tests pasando** (30 nuevos de dominio).
 Fecha: 2026-05-28

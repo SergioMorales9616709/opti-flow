@@ -88,9 +88,7 @@ class MainDashboardView extends ConsumerWidget {
                           iconData: Icons.speed,
                           onTap: () => Navigator.push<void>(
                             context,
-                            MaterialPageRoute(
-                              builder: (_) => const RsvpView(),
-                            ),
+                            MaterialPageRoute(builder: (_) => const RsvpView()),
                           ),
                         ),
                       ],
@@ -148,9 +146,7 @@ class _AppHeader extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(
-            color: cs.outlineVariant.withValues(alpha: 0.35),
-          ),
+          bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.35)),
         ),
       ),
       child: Row(
