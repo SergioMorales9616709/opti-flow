@@ -50,5 +50,8 @@ app.*.map.json
 # Claude local settings
 .claude/settings.local.json
 
+# Claude Code scheduled-tasks runtime lock (session/PID-specific, regenerated)
+.claude/scheduled_tasks.lock
+
 # graphify knowledge graph output (regenerable, machine-specific paths)
 graphify-out/
