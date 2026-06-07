@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to AI coding agents (Antigravity, Claude Code, etc.) when working with code in this repository.
 
 For architecture details and contributing guidelines, see [`docs/`](docs/).
 
@@ -83,4 +83,4 @@ Rules:
 
 ---
 
-> **Note:** `AGENTS.md` mirrors this file for other agents (Antigravity, etc.). If you update one, update the other to keep guidance consistent.
+> **Note:** This file mirrors `CLAUDE.md`. If you update one, update the other to keep guidance consistent across agents.

@@ -1,47 +1,135 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:optiflow/features/speed_reading/domain/neuro_reading_utils.dart';
-import 'package:optiflow/features/speed_reading/presentation/viewmodels/rsvp_viewmodel.dart';
+import 'package:optiflow/features/speed_reading/presentation/viewmodels/guided_lines_viewmodel.dart';
 import 'package:optiflow/features/vision_training/presentation/viewmodels/saccadic_jumps_viewmodel.dart'
     show ExerciseDuration;
 
-class RsvpView extends ConsumerWidget {
-  const RsvpView({super.key});
+// Strict per-line height enforced via `itemExtent` on the ListView so the
+// physical row height always matches the math used for page-flip scrolling.
+// fontSize(32) * lineHeight(1.4) + vertical margin(16) + container padding(12)
+// ≈ 72.8, rounded up so the text never clips inside the fixed row.
+const _kLineHeight = 73.0;
+
+// The style used for both pagination calculation and rendering.
+// Must be identical so TextPainter measurements match the rendered layout.
+TextStyle _lineStyle(BuildContext context) => TextStyle(
+  fontSize: 32,
+  fontWeight: FontWeight.w400,
+  color: Theme.of(context).colorScheme.onSurface,
+);
+
+class GuidedLinesView extends ConsumerStatefulWidget {
+  const GuidedLinesView({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GuidedLinesView> createState() => _GuidedLinesViewState();
+}
+
+class _GuidedLinesViewState extends ConsumerState<GuidedLinesView> {
+  final _scrollController = ScrollController();
+  bool _paginationScheduled = false;
+
+  // Computed once per layout pass inside the LayoutBuilder below — counts
+  // only lines that fit *completely* in the viewport, so the page math here
+  // matches the strict `itemExtent: _kLineHeight` rows exactly.
+  int _maxLinesPerPage = 0;
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// "Page Flip": jumps instantly to the exact top offset of the page that
+  /// contains [index], instead of continuously scrolling to center the active
+  /// line. Because rows have a strict `itemExtent`, `targetPage * linesPerPage
+  /// * lineHeight` always lands the new line flush with the viewport's top
+  /// edge — the eye returns to the top of the screen, like flipping a page.
+  void _flipToLine(int index) {
+    if (!_scrollController.hasClients || _maxLinesPerPage <= 0) return;
+    final targetPage = index ~/ _maxLinesPerPage;
+    final exactOffset = (targetPage * _maxLinesPerPage * _kLineHeight).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
+    );
+    if (_scrollController.offset != exactOffset) {
+      _scrollController.jumpTo(exactOffset);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isLoaded = ref.watch(rsvpProvider.select((s) => s.isLoaded));
-    final isPlaying = ref.watch(rsvpProvider.select((s) => s.isPlaying));
-    final isMuted = ref.watch(rsvpProvider.select((s) => s.isMuted));
-    final currentWpm = ref.watch(rsvpProvider.select((s) => s.currentWpm));
-    final currentIndex = ref.watch(rsvpProvider.select((s) => s.currentIndex));
-    final words = ref.watch(rsvpProvider.select((s) => s.words));
+    final isLoaded = ref.watch(guidedLinesProvider.select((s) => s.isLoaded));
+    final lines = ref.watch(guidedLinesProvider.select((s) => s.lines));
+    final isPlaying = ref.watch(guidedLinesProvider.select((s) => s.isPlaying));
+    final isMuted = ref.watch(guidedLinesProvider.select((s) => s.isMuted));
+    final currentWpm = ref.watch(
+      guidedLinesProvider.select((s) => s.currentWpm),
+    );
+    final currentLineIndex = ref.watch(
+      guidedLinesProvider.select((s) => s.currentLineIndex),
+    );
     final selectedDuration = ref.watch(
-      rsvpProvider.select((s) => s.selectedDuration),
+      guidedLinesProvider.select((s) => s.selectedDuration),
     );
     final timeLeftSeconds = ref.watch(
-      rsvpProvider.select((s) => s.timeLeftSeconds),
+      guidedLinesProvider.select((s) => s.timeLeftSeconds),
     );
 
-    final notifier = ref.read(rsvpProvider.notifier);
-    final progress = words.isEmpty ? 0.0 : currentIndex / words.length;
-    final currentWord =
-        (isLoaded && words.isNotEmpty && currentIndex < words.length)
-        ? words[currentIndex]
-        : '';
+    final notifier = ref.read(guidedLinesProvider.notifier);
+    final progress = lines.isEmpty ? 0.0 : currentLineIndex / lines.length;
+
+    // Page-flip whenever the active line crosses into a new page.
+    ref.listen<int>(
+      guidedLinesProvider.select((s) => s.currentLineIndex),
+      (_, index) => _flipToLine(index),
+    );
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // ── Central word area ──────────────────────────────────────────
+            // ── Line list area ─────────────────────────────────────────────
             Expanded(
-              child: Center(
-                child: isLoaded
-                    ? OrpTextDisplay(chunk: currentWord)
-                    : CircularProgressIndicator(color: cs.primary),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Strict count of lines that fit completely in the
+                  // viewport — drives the page-flip math in `_flipToLine`.
+                  _maxLinesPerPage = (constraints.maxHeight / _kLineHeight)
+                      .floor();
+
+                  // Trigger pagination once — after layout width is known.
+                  if (isLoaded && lines.isEmpty && !_paginationScheduled) {
+                    _paginationScheduled = true;
+                    WidgetsBinding.instance.addPostFrameCallback((_) {
+                      if (mounted) {
+                        notifier.paginate(
+                          // 24px horizontal padding × 2
+                          constraints.maxWidth - 48,
+                          _lineStyle(context),
+                        );
+                      }
+                    });
+                  }
+
+                  if (!isLoaded || lines.isEmpty) {
+                    return Center(
+                      child: CircularProgressIndicator(color: cs.primary),
+                    );
+                  }
+
+                  return ListView.builder(
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemExtent: _kLineHeight,
+                    itemCount: lines.length,
+                    itemBuilder: (context, index) {
+                      final isActive = index == currentLineIndex;
+                      return _LineTile(text: lines[index], isActive: isActive);
+                    },
+                  );
+                },
               ),
             ),
 
@@ -178,7 +266,7 @@ class RsvpView extends ConsumerWidget {
                           ),
                         ),
                       IconButton(
-                        onPressed: isLoaded
+                        onPressed: (isLoaded && lines.isNotEmpty)
                             ? () => isPlaying
                                   ? notifier.pause()
                                   : notifier.startReading()
@@ -203,67 +291,37 @@ class RsvpView extends ConsumerWidget {
 }
 
 // ---------------------------------------------------------------------------
-// ORP display widget
+// Line tile — active line highlighted, others dimmed
 // ---------------------------------------------------------------------------
 
-class OrpTextDisplay extends StatelessWidget {
-  const OrpTextDisplay({required this.chunk, super.key});
+class _LineTile extends StatelessWidget {
+  const _LineTile({required this.text, required this.isActive});
 
-  final String chunk;
+  final String text;
+  final bool isActive;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final parts = getOrpParts(chunk);
-    final guideColor = cs.onSurface.withValues(alpha: 0.3);
-
-    // Non-breaking spaces prevent Flutter from trimming trailing/leading
-    // whitespace when text is right- or left-aligned inside an Expanded.
-    final safeLeft = parts.left.replaceAll(' ', ' ');
-    final safeRight = parts.right.replaceAll(' ', ' ');
-
-    final baseStyle = GoogleFonts.robotoMono(
-      fontSize: 64,
-      fontWeight: FontWeight.w800,
-      color: cs.onSurface,
-    );
-
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Top focus guide mark
-        Container(width: 2, height: 10, color: guideColor),
-        const SizedBox(height: 6),
-
-        // ORP row — left | orp letter | right
-        Row(
-          children: [
-            Expanded(
-              child: Text(
-                safeLeft,
-                textAlign: TextAlign.right,
-                style: baseStyle,
-                maxLines: 1,
-                overflow: TextOverflow.visible,
-              ),
-            ),
-            Text(parts.orp, style: baseStyle.copyWith(color: cs.primary)),
-            Expanded(
-              child: Text(
-                safeRight,
-                textAlign: TextAlign.left,
-                style: baseStyle,
-                maxLines: 1,
-                overflow: TextOverflow.visible,
-              ),
-            ),
-          ],
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      decoration: BoxDecoration(
+        color: isActive
+            ? cs.primary.withValues(alpha: 0.08)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: 32,
+          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+          color: isActive ? cs.primary : cs.onSurface.withValues(alpha: 0.15),
+          height: 1.4,
         ),
-
-        const SizedBox(height: 6),
-        // Bottom focus guide mark
-        Container(width: 2, height: 10, color: guideColor),
-      ],
+      ),
     );
   }
 }
