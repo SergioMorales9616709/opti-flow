@@ -49,3 +49,6 @@ app.*.map.json
 
 # Claude local settings
 .claude/settings.local.json
+
+# graphify knowledge graph output (regenerable, machine-specific paths)
+graphify-out/
