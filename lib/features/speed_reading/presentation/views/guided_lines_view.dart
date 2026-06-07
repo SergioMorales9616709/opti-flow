@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optiflow/features/speed_reading/presentation/viewmodels/guided_lines_viewmodel.dart';
+import 'package:optiflow/features/vision_training/presentation/viewmodels/saccadic_jumps_viewmodel.dart'
+    show ExerciseDuration;
 
-// Approximate rendered height per line item:
-// fontSize(32) * lineHeight(1.4) + vertical padding(16) + container padding(12)
-const _kLineItemHeight = 73.0;
+// Strict per-line height enforced via `itemExtent` on the ListView so the
+// physical row height always matches the math used for page-flip scrolling.
+// fontSize(32) * lineHeight(1.4) + vertical margin(16) + container padding(12)
+// ≈ 72.8, rounded up so the text never clips inside the fixed row.
+const _kLineHeight = 73.0;
 
 // The style used for both pagination calculation and rendering.
 // Must be identical so TextPainter measurements match the rendered layout.
 TextStyle _lineStyle(BuildContext context) => TextStyle(
-      fontSize: 32,
-      fontWeight: FontWeight.w400,
-      color: Theme.of(context).colorScheme.onSurface,
-    );
+  fontSize: 32,
+  fontWeight: FontWeight.w400,
+  color: Theme.of(context).colorScheme.onSurface,
+);
 
 class GuidedLinesView extends ConsumerStatefulWidget {
   const GuidedLinesView({super.key});
@@ -25,22 +29,32 @@ class _GuidedLinesViewState extends ConsumerState<GuidedLinesView> {
   final _scrollController = ScrollController();
   bool _paginationScheduled = false;
 
+  // Computed once per layout pass inside the LayoutBuilder below — counts
+  // only lines that fit *completely* in the viewport, so the page math here
+  // matches the strict `itemExtent: _kLineHeight` rows exactly.
+  int _maxLinesPerPage = 0;
+
   @override
   void dispose() {
     _scrollController.dispose();
     super.dispose();
   }
 
-  void _scrollToLine(int index) {
-    if (!_scrollController.hasClients) return;
-    final viewportHeight = _scrollController.position.viewportDimension;
-    final targetOffset =
-        index * _kLineItemHeight - viewportHeight / 2 + _kLineItemHeight / 2;
-    _scrollController.animateTo(
-      targetOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeOut,
+  /// "Page Flip": jumps instantly to the exact top offset of the page that
+  /// contains [index], instead of continuously scrolling to center the active
+  /// line. Because rows have a strict `itemExtent`, `targetPage * linesPerPage
+  /// * lineHeight` always lands the new line flush with the viewport's top
+  /// edge — the eye returns to the top of the screen, like flipping a page.
+  void _flipToLine(int index) {
+    if (!_scrollController.hasClients || _maxLinesPerPage <= 0) return;
+    final targetPage = index ~/ _maxLinesPerPage;
+    final exactOffset = (targetPage * _maxLinesPerPage * _kLineHeight).clamp(
+      0.0,
+      _scrollController.position.maxScrollExtent,
     );
+    if (_scrollController.offset != exactOffset) {
+      _scrollController.jumpTo(exactOffset);
+    }
   }
 
   @override
@@ -50,19 +64,26 @@ class _GuidedLinesViewState extends ConsumerState<GuidedLinesView> {
     final lines = ref.watch(guidedLinesProvider.select((s) => s.lines));
     final isPlaying = ref.watch(guidedLinesProvider.select((s) => s.isPlaying));
     final isMuted = ref.watch(guidedLinesProvider.select((s) => s.isMuted));
-    final currentWpm =
-        ref.watch(guidedLinesProvider.select((s) => s.currentWpm));
-    final currentLineIndex =
-        ref.watch(guidedLinesProvider.select((s) => s.currentLineIndex));
+    final currentWpm = ref.watch(
+      guidedLinesProvider.select((s) => s.currentWpm),
+    );
+    final currentLineIndex = ref.watch(
+      guidedLinesProvider.select((s) => s.currentLineIndex),
+    );
+    final selectedDuration = ref.watch(
+      guidedLinesProvider.select((s) => s.selectedDuration),
+    );
+    final timeLeftSeconds = ref.watch(
+      guidedLinesProvider.select((s) => s.timeLeftSeconds),
+    );
 
     final notifier = ref.read(guidedLinesProvider.notifier);
-    final progress =
-        lines.isEmpty ? 0.0 : currentLineIndex / lines.length;
+    final progress = lines.isEmpty ? 0.0 : currentLineIndex / lines.length;
 
-    // Auto-scroll whenever the active line changes.
+    // Page-flip whenever the active line crosses into a new page.
     ref.listen<int>(
       guidedLinesProvider.select((s) => s.currentLineIndex),
-      (_, index) => _scrollToLine(index),
+      (_, index) => _flipToLine(index),
     );
 
     return Scaffold(
@@ -73,6 +94,11 @@ class _GuidedLinesViewState extends ConsumerState<GuidedLinesView> {
             Expanded(
               child: LayoutBuilder(
                 builder: (context, constraints) {
+                  // Strict count of lines that fit completely in the
+                  // viewport — drives the page-flip math in `_flipToLine`.
+                  _maxLinesPerPage = (constraints.maxHeight / _kLineHeight)
+                      .floor();
+
                   // Trigger pagination once — after layout width is known.
                   if (isLoaded && lines.isEmpty && !_paginationScheduled) {
                     _paginationScheduled = true;
@@ -95,17 +121,12 @@ class _GuidedLinesViewState extends ConsumerState<GuidedLinesView> {
 
                   return ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemExtent: _kLineHeight,
                     itemCount: lines.length,
                     itemBuilder: (context, index) {
                       final isActive = index == currentLineIndex;
-                      return _LineTile(
-                        text: lines[index],
-                        isActive: isActive,
-                      );
+                      return _LineTile(text: lines[index], isActive: isActive);
                     },
                   );
                 },
@@ -151,18 +172,37 @@ class _GuidedLinesViewState extends ConsumerState<GuidedLinesView> {
                     ],
                   ),
 
-                  // Row 2: Speed slider
-                  Slider(
-                    value: currentWpm.toDouble(),
-                    min: 200,
-                    max: 1200,
-                    label: '$currentWpm WPM',
-                    activeColor: cs.primary,
-                    inactiveColor: cs.surfaceContainerHighest,
-                    onChanged: (v) => notifier.setWpm(v.round()),
+                  // Row 2: Speed slider + duration selector
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Slider(
+                          value: currentWpm.toDouble(),
+                          min: 200,
+                          max: 1200,
+                          label: '$currentWpm WPM',
+                          activeColor: cs.primary,
+                          inactiveColor: cs.surfaceContainerHighest,
+                          onChanged: (v) => notifier.setWpm(v.round()),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      SegmentedButton<ExerciseDuration>(
+                        segments: ExerciseDuration.values
+                            .map(
+                              (d) =>
+                                  ButtonSegment(value: d, label: Text(d.label)),
+                            )
+                            .toList(),
+                        selected: {selectedDuration},
+                        onSelectionChanged: isPlaying
+                            ? null
+                            : (s) => notifier.setDuration(s.first),
+                      ),
+                    ],
                   ),
 
-                  // Row 3: Back | Progress | Play/Pause
+                  // Row 3: Back | Progress | Timer | Play/Pause
                   Row(
                     children: [
                       TextButton.icon(
@@ -173,8 +213,7 @@ class _GuidedLinesViewState extends ConsumerState<GuidedLinesView> {
                         icon: const Icon(Icons.arrow_back_ios, size: 14),
                         label: const Text('ATRÁS'),
                         style: TextButton.styleFrom(
-                          foregroundColor:
-                              cs.onSurface.withValues(alpha: 0.6),
+                          foregroundColor: cs.onSurface.withValues(alpha: 0.6),
                         ),
                       ),
                       Expanded(
@@ -183,18 +222,54 @@ class _GuidedLinesViewState extends ConsumerState<GuidedLinesView> {
                           child: LinearProgressIndicator(
                             value: progress,
                             backgroundColor: cs.surfaceContainerHighest,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(cs.primary),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              cs.primary,
+                            ),
                             borderRadius: BorderRadius.circular(4),
                             minHeight: 6,
                           ),
                         ),
                       ),
+                      if (isPlaying &&
+                          selectedDuration != ExerciseDuration.infinite &&
+                          timeLeftSeconds != null)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: cs.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: cs.primary.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Builder(
+                              builder: (context) {
+                                final t = timeLeftSeconds;
+                                final mm = (t ~/ 60).toString().padLeft(2, '0');
+                                final ss = (t % 60).toString().padLeft(2, '0');
+                                return Text(
+                                  '$mm:$ss',
+                                  style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.primary,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
                       IconButton(
                         onPressed: (isLoaded && lines.isNotEmpty)
                             ? () => isPlaying
-                                ? notifier.pause()
-                                : notifier.startReading()
+                                  ? notifier.pause()
+                                  : notifier.startReading()
                             : null,
                         icon: Icon(
                           isPlaying ? Icons.pause : Icons.play_arrow,
@@ -243,7 +318,7 @@ class _LineTile extends StatelessWidget {
         style: TextStyle(
           fontSize: 32,
           fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
-          color: isActive ? cs.primary : cs.onSurface.withValues(alpha: 0.3),
+          color: isActive ? cs.primary : cs.onSurface.withValues(alpha: 0.15),
           height: 1.4,
         ),
       ),

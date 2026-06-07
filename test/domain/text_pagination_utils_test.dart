@@ -69,8 +69,11 @@ void main() {
         painter
           ..text = TextSpan(text: line, style: style)
           ..layout();
-        expect(painter.size.width, lessThanOrEqualTo(maxW + 1),
-            reason: 'Line "$line" exceeds maxWidth');
+        expect(
+          painter.size.width,
+          lessThanOrEqualTo(maxW + 1),
+          reason: 'Line "$line" exceeds maxWidth',
+        );
       }
     });
   });

@@ -13,11 +13,14 @@ import 'package:optiflow/features/speed_reading/presentation/viewmodels/guided_l
 
 class _FakeAudioService extends AudioService {
   bool bgmPlaying = false;
-  @override Future<void> init() async {}
-  @override Future<void> play(AudioCue cue) async {}
+  @override
+  Future<void> init() async {}
+  @override
+  Future<void> play(AudioCue cue) async {}
   @override
   Future<void> playBgm({double volume = 0.5}) async => bgmPlaying = true;
-  @override Future<void> stopBgm() async => bgmPlaying = false;
+  @override
+  Future<void> stopBgm() async => bgmPlaying = false;
 }
 
 class _FakeProgressRepository implements ProgressRepository {
@@ -36,7 +39,8 @@ class _FakeProgressRepository implements ProgressRepository {
 class _FakeTextRepository implements TextRepository {
   _FakeTextRepository(this.words);
   final List<String> words;
-  @override Future<List<String>> loadWords(String assetPath) async => words;
+  @override
+  Future<List<String>> loadWords(String assetPath) async => words;
 }
 
 ProviderContainer _makeContainer({
@@ -47,8 +51,9 @@ ProviderContainer _makeContainer({
   return ProviderContainer(
     overrides: [
       audioServiceProvider.overrideWithValue(audio ?? _FakeAudioService()),
-      progressRepositoryProvider
-          .overrideWithValue(repo ?? _FakeProgressRepository()),
+      progressRepositoryProvider.overrideWithValue(
+        repo ?? _FakeProgressRepository(),
+      ),
       textRepositoryProvider.overrideWithValue(_FakeTextRepository(words)),
     ],
   );
@@ -151,10 +156,12 @@ void main() {
 
     test('populates lines after text is loaded', () async {
       await _waitLoaded(container);
-      container.read(guidedLinesProvider.notifier).paginate(
-        800,
-        const TextStyle(fontSize: 32, fontWeight: FontWeight.w400),
-      );
+      container
+          .read(guidedLinesProvider.notifier)
+          .paginate(
+            800,
+            const TextStyle(fontSize: 32, fontWeight: FontWeight.w400),
+          );
       expect(container.read(guidedLinesProvider).lines, isNotEmpty);
     });
 

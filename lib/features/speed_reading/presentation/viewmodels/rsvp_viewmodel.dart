@@ -2,14 +2,25 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optiflow/core/database/progress_repository.dart';
+import 'package:optiflow/core/utils/audio_cue.dart';
 import 'package:optiflow/core/utils/audio_service.dart';
 import 'package:optiflow/features/speed_reading/data/text_repository.dart';
 import 'package:optiflow/features/speed_reading/domain/neuro_reading_utils.dart';
+import 'package:optiflow/features/vision_training/presentation/viewmodels/saccadic_jumps_viewmodel.dart'
+    show ExerciseDuration;
 
 const _kDefaultWpm = 300;
 const _kMinWpm = 200;
 const _kMaxWpm = 1200;
 const _kAssetPath = 'assets/texts/cuento_1.txt';
+
+// Sentinel privado para distinguir "no se pasó el parámetro" de null
+// en copyWith.
+class _Absent {
+  const _Absent();
+}
+
+const _absent = _Absent();
 
 /// Calculates the delay in ms for [word] at [wpm], applying dynamic pauses
 /// for sentence boundaries. Exposed at library level for unit testing.
@@ -33,6 +44,8 @@ class RsvpState {
     this.isPlaying = false,
     this.isMuted = false,
     this.isLoaded = false,
+    this.selectedDuration = ExerciseDuration.s60,
+    this.timeLeftSeconds,
   });
 
   final List<String> words;
@@ -41,6 +54,8 @@ class RsvpState {
   final bool isPlaying;
   final bool isMuted;
   final bool isLoaded;
+  final ExerciseDuration selectedDuration;
+  final int? timeLeftSeconds;
 
   RsvpState copyWith({
     List<String>? words,
@@ -49,6 +64,8 @@ class RsvpState {
     bool? isPlaying,
     bool? isMuted,
     bool? isLoaded,
+    ExerciseDuration? selectedDuration,
+    Object? timeLeftSeconds = _absent,
   }) {
     return RsvpState(
       words: words ?? this.words,
@@ -57,6 +74,10 @@ class RsvpState {
       isPlaying: isPlaying ?? this.isPlaying,
       isMuted: isMuted ?? this.isMuted,
       isLoaded: isLoaded ?? this.isLoaded,
+      selectedDuration: selectedDuration ?? this.selectedDuration,
+      timeLeftSeconds: timeLeftSeconds is _Absent
+          ? this.timeLeftSeconds
+          : timeLeftSeconds as int?,
     );
   }
 }
@@ -67,6 +88,7 @@ class RsvpState {
 
 class RsvpNotifier extends Notifier<RsvpState> {
   bool _running = false;
+  Timer? _countdownTimer;
 
   @override
   RsvpState build() {
@@ -74,6 +96,7 @@ class RsvpNotifier extends Notifier<RsvpState> {
     final audioService = ref.read(audioServiceProvider);
     ref.onDispose(() {
       _running = false;
+      _cancelCountdown();
       audioService.stopBgm();
     });
     _loadText();
@@ -91,6 +114,11 @@ class RsvpNotifier extends Notifier<RsvpState> {
     state = state.copyWith(currentWpm: wpm.clamp(_kMinWpm, _kMaxWpm));
   }
 
+  void setDuration(ExerciseDuration duration) {
+    if (state.isPlaying) return;
+    state = state.copyWith(selectedDuration: duration, timeLeftSeconds: null);
+  }
+
   void toggleMute() {
     final muted = !state.isMuted;
     state = state.copyWith(isMuted: muted);
@@ -103,7 +131,9 @@ class RsvpNotifier extends Notifier<RsvpState> {
   Future<void> startReading() async {
     if (state.isPlaying || state.words.isEmpty) return;
     _running = true;
-    state = state.copyWith(isPlaying: true);
+    final seconds = state.selectedDuration.seconds;
+    state = state.copyWith(isPlaying: true, timeLeftSeconds: seconds);
+    if (seconds != null) _startCountdown();
     if (!state.isMuted) {
       unawaited(ref.read(audioServiceProvider).playBgm());
     }
@@ -122,6 +152,7 @@ class RsvpNotifier extends Notifier<RsvpState> {
   void pause() {
     if (!state.isPlaying) return;
     _running = false;
+    _cancelCountdown();
     state = state.copyWith(isPlaying: false);
     ref.read(audioServiceProvider).stopBgm();
     unawaited(_persist());
@@ -129,8 +160,37 @@ class RsvpNotifier extends Notifier<RsvpState> {
 
   Future<void> _onFinished() async {
     _running = false;
+    _cancelCountdown();
     unawaited(ref.read(audioServiceProvider).stopBgm());
     state = state.copyWith(isPlaying: false);
+    await _persist();
+  }
+
+  void _startCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final left = state.timeLeftSeconds;
+      if (left == null) return;
+      if (left <= 1) {
+        unawaited(_onTimeUp());
+      } else {
+        state = state.copyWith(timeLeftSeconds: left - 1);
+      }
+    });
+  }
+
+  void _cancelCountdown() {
+    _countdownTimer?.cancel();
+    _countdownTimer = null;
+  }
+
+  Future<void> _onTimeUp() async {
+    _running = false;
+    _cancelCountdown();
+    final audio = ref.read(audioServiceProvider);
+    await audio.stopBgm();
+    state = state.copyWith(isPlaying: false, timeLeftSeconds: 0);
+    await audio.play(AudioCue.success);
     await _persist();
   }
 

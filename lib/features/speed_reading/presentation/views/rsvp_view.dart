@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:optiflow/features/speed_reading/domain/neuro_reading_utils.dart';
 import 'package:optiflow/features/speed_reading/presentation/viewmodels/rsvp_viewmodel.dart';
+import 'package:optiflow/features/vision_training/presentation/viewmodels/saccadic_jumps_viewmodel.dart'
+    show ExerciseDuration;
 
 class RsvpView extends ConsumerWidget {
   const RsvpView({super.key});
@@ -16,6 +18,12 @@ class RsvpView extends ConsumerWidget {
     final currentWpm = ref.watch(rsvpProvider.select((s) => s.currentWpm));
     final currentIndex = ref.watch(rsvpProvider.select((s) => s.currentIndex));
     final words = ref.watch(rsvpProvider.select((s) => s.words));
+    final selectedDuration = ref.watch(
+      rsvpProvider.select((s) => s.selectedDuration),
+    );
+    final timeLeftSeconds = ref.watch(
+      rsvpProvider.select((s) => s.timeLeftSeconds),
+    );
 
     final notifier = ref.read(rsvpProvider.notifier);
     final progress = words.isEmpty ? 0.0 : currentIndex / words.length;
@@ -76,18 +84,37 @@ class RsvpView extends ConsumerWidget {
                     ],
                   ),
 
-                  // Row 2: Speed slider
-                  Slider(
-                    value: currentWpm.toDouble(),
-                    min: 200,
-                    max: 1200,
-                    label: '$currentWpm WPM',
-                    activeColor: cs.primary,
-                    inactiveColor: cs.surfaceContainerHighest,
-                    onChanged: (v) => notifier.setWpm(v.round()),
+                  // Row 2: Speed slider + duration selector
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Slider(
+                          value: currentWpm.toDouble(),
+                          min: 200,
+                          max: 1200,
+                          label: '$currentWpm WPM',
+                          activeColor: cs.primary,
+                          inactiveColor: cs.surfaceContainerHighest,
+                          onChanged: (v) => notifier.setWpm(v.round()),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      SegmentedButton<ExerciseDuration>(
+                        segments: ExerciseDuration.values
+                            .map(
+                              (d) =>
+                                  ButtonSegment(value: d, label: Text(d.label)),
+                            )
+                            .toList(),
+                        selected: {selectedDuration},
+                        onSelectionChanged: isPlaying
+                            ? null
+                            : (s) => notifier.setDuration(s.first),
+                      ),
+                    ],
                   ),
 
-                  // Row 3: Back | Progress | Play/Pause
+                  // Row 3: Back | Progress | Timer | Play/Pause
                   Row(
                     children: [
                       TextButton.icon(
@@ -115,6 +142,41 @@ class RsvpView extends ConsumerWidget {
                           ),
                         ),
                       ),
+                      if (isPlaying &&
+                          selectedDuration != ExerciseDuration.infinite &&
+                          timeLeftSeconds != null)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 12),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: cs.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: cs.primary.withValues(alpha: 0.3),
+                              ),
+                            ),
+                            child: Builder(
+                              builder: (context) {
+                                final t = timeLeftSeconds;
+                                final mm = (t ~/ 60).toString().padLeft(2, '0');
+                                final ss = (t % 60).toString().padLeft(2, '0');
+                                return Text(
+                                  '$mm:$ss',
+                                  style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w600,
+                                    color: cs.primary,
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
                       IconButton(
                         onPressed: isLoaded
                             ? () => isPlaying
