@@ -139,9 +139,9 @@ void main() {
       expect(container.read(guidedLinesProvider).currentWpm, 200);
     });
 
-    test('clamps to max 1200', () {
+    test('clamps to max 2400', () {
       container.read(guidedLinesProvider.notifier).setWpm(9999);
-      expect(container.read(guidedLinesProvider).currentWpm, 1200);
+      expect(container.read(guidedLinesProvider).currentWpm, 2400);
     });
   });
 

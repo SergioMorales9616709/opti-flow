@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optiflow/core/theme/app_themes.dart';
 import 'package:optiflow/core/theme/theme_provider.dart';
+import 'package:optiflow/features/speed_reading/presentation/views/book_mode_view.dart';
 import 'package:optiflow/features/speed_reading/presentation/views/guided_lines_view.dart';
 import 'package:optiflow/features/speed_reading/presentation/views/rsvp_view.dart';
 import 'package:optiflow/features/vision_training/presentation/views/peripheral_expansion_view.dart';
@@ -100,6 +101,17 @@ class MainDashboardView extends ConsumerWidget {
                             context,
                             MaterialPageRoute(
                               builder: (_) => const GuidedLinesView(),
+                            ),
+                          ),
+                        ),
+                        _ExerciseCard(
+                          title: 'MODO\nLIBRO',
+                          subtitle: 'Doble columna · simulación de libro',
+                          iconData: Icons.menu_book,
+                          onTap: () => Navigator.push<void>(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const BookModeView(),
                             ),
                           ),
                         ),

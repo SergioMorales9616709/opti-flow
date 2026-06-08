@@ -159,9 +159,9 @@ void main() {
       expect(container.read(rsvpProvider).currentWpm, 200);
     });
 
-    test('clamps to max 1200', () {
+    test('clamps to max 2400', () {
       container.read(rsvpProvider.notifier).setWpm(9999);
-      expect(container.read(rsvpProvider).currentWpm, 1200);
+      expect(container.read(rsvpProvider).currentWpm, 2400);
     });
   });
 

@@ -1,11 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:optiflow/core/database/progress_repository.dart';
 import 'package:optiflow/core/utils/audio_cue.dart';
 import 'package:optiflow/core/utils/audio_service.dart';
 import 'package:optiflow/features/speed_reading/data/text_repository.dart';
-import 'package:optiflow/features/speed_reading/domain/neuro_reading_utils.dart';
+import 'package:optiflow/features/speed_reading/domain/text_pagination_utils.dart';
 import 'package:optiflow/features/vision_training/presentation/viewmodels/saccadic_jumps_viewmodel.dart'
     show ExerciseDuration;
 
@@ -22,24 +23,21 @@ class _Absent {
 
 const _absent = _Absent();
 
-/// Calculates the delay in ms for [word] at [wpm], applying dynamic pauses
-/// for sentence boundaries. Exposed at library level for unit testing.
-int pauseMsFor(String word, int wpm) {
-  final base = 60000 ~/ wpm;
-  if (word.endsWith(',')) return (base * 1.5).round();
-  const stops = {'.', ':', '?', '!', ';'};
-  if (stops.any((s) => word.endsWith(s))) return (base * 2.5).round();
-  return base;
+/// Returns the display duration in ms for [line] at [wpm].
+/// Exposed at library level for unit testing.
+int msForLine(String line, int wpm) {
+  final wordCount = line.split(' ').where((w) => w.isNotEmpty).length;
+  return (60000 ~/ wpm) * wordCount;
 }
 
 // ---------------------------------------------------------------------------
 // State
 // ---------------------------------------------------------------------------
 
-class RsvpState {
-  const RsvpState({
-    this.words = const [],
-    this.currentIndex = 0,
+class BookModeState {
+  const BookModeState({
+    this.lines = const [],
+    this.currentLineIndex = 0,
     this.currentWpm = _kDefaultWpm,
     this.isPlaying = false,
     this.isMuted = false,
@@ -48,8 +46,8 @@ class RsvpState {
     this.timeLeftSeconds,
   });
 
-  final List<String> words;
-  final int currentIndex;
+  final List<String> lines;
+  final int currentLineIndex;
   final int currentWpm;
   final bool isPlaying;
   final bool isMuted;
@@ -57,9 +55,9 @@ class RsvpState {
   final ExerciseDuration selectedDuration;
   final int? timeLeftSeconds;
 
-  RsvpState copyWith({
-    List<String>? words,
-    int? currentIndex,
+  BookModeState copyWith({
+    List<String>? lines,
+    int? currentLineIndex,
     int? currentWpm,
     bool? isPlaying,
     bool? isMuted,
@@ -67,9 +65,9 @@ class RsvpState {
     ExerciseDuration? selectedDuration,
     Object? timeLeftSeconds = _absent,
   }) {
-    return RsvpState(
-      words: words ?? this.words,
-      currentIndex: currentIndex ?? this.currentIndex,
+    return BookModeState(
+      lines: lines ?? this.lines,
+      currentLineIndex: currentLineIndex ?? this.currentLineIndex,
       currentWpm: currentWpm ?? this.currentWpm,
       isPlaying: isPlaying ?? this.isPlaying,
       isMuted: isMuted ?? this.isMuted,
@@ -86,12 +84,13 @@ class RsvpState {
 // Notifier
 // ---------------------------------------------------------------------------
 
-class RsvpNotifier extends Notifier<RsvpState> {
+class BookModeNotifier extends Notifier<BookModeState> {
   bool _running = false;
+  String _rawText = '';
   Timer? _countdownTimer;
 
   @override
-  RsvpState build() {
+  BookModeState build() {
     // Capture before disposal — ref.read is invalid after container tears down.
     final audioService = ref.read(audioServiceProvider);
     ref.onDispose(() {
@@ -100,14 +99,30 @@ class RsvpNotifier extends Notifier<RsvpState> {
       audioService.stopBgm();
     });
     _loadText();
-    return const RsvpState();
+    return const BookModeState();
   }
 
   Future<void> _loadText() async {
-    final rawWords = await ref
-        .read(textRepositoryProvider)
-        .loadWords(_kAssetPath);
-    state = state.copyWith(words: chunkWords(rawWords), isLoaded: true);
+    final words = await ref.read(textRepositoryProvider).loadWords(_kAssetPath);
+    _rawText = words.join(' ');
+    state = state.copyWith(isLoaded: true);
+  }
+
+  /// Called from BookModeView via LayoutBuilder once the column width is
+  /// known. Lines are paginated to fit a single book column.
+  void paginate(
+    double columnWidth,
+    TextStyle style, {
+    TextScaler textScaler = TextScaler.noScaling,
+  }) {
+    if (_rawText.isEmpty) return;
+    final lines = paginateTextIntoLines(
+      rawText: _rawText,
+      maxWidth: columnWidth,
+      style: style,
+      textScaler: textScaler,
+    );
+    state = state.copyWith(lines: lines, currentLineIndex: 0);
   }
 
   void setWpm(int wpm) {
@@ -129,7 +144,7 @@ class RsvpNotifier extends Notifier<RsvpState> {
   }
 
   Future<void> startReading() async {
-    if (state.isPlaying || state.words.isEmpty) return;
+    if (state.isPlaying || state.lines.isEmpty) return;
     _running = true;
     final seconds = state.selectedDuration.seconds;
     state = state.copyWith(isPlaying: true, timeLeftSeconds: seconds);
@@ -138,23 +153,24 @@ class RsvpNotifier extends Notifier<RsvpState> {
       unawaited(ref.read(audioServiceProvider).playBgm());
     }
 
-    while (_running && state.currentIndex < state.words.length) {
-      final word = state.words[state.currentIndex];
-      final ms = pauseMsFor(word, state.currentWpm);
+    while (_running && state.currentLineIndex < state.lines.length) {
+      final line = state.lines[state.currentLineIndex];
+      final ms = msForLine(line, state.currentWpm);
       await Future<void>.delayed(Duration(milliseconds: ms));
       if (!_running) break;
-      state = state.copyWith(currentIndex: state.currentIndex + 1);
+      state = state.copyWith(currentLineIndex: state.currentLineIndex + 1);
     }
 
     if (_running) await _onFinished();
   }
 
   void pause() {
-    if (!state.isPlaying) return;
     _running = false;
     _cancelCountdown();
-    state = state.copyWith(isPlaying: false);
-    ref.read(audioServiceProvider).stopBgm();
+    if (state.isPlaying) {
+      state = state.copyWith(isPlaying: false);
+      ref.read(audioServiceProvider).stopBgm();
+    }
     unawaited(_persist());
   }
 
@@ -198,12 +214,12 @@ class RsvpNotifier extends Notifier<RsvpState> {
     await ref
         .read(progressRepositoryProvider)
         .saveProgress(
-          exerciseType: 'speed_reading_rsvp',
+          exerciseType: 'speed_reading_book',
           maxSpeedMs: state.currentWpm,
         );
   }
 }
 
-final rsvpProvider = NotifierProvider<RsvpNotifier, RsvpState>(
-  RsvpNotifier.new,
+final bookModeProvider = NotifierProvider<BookModeNotifier, BookModeState>(
+  BookModeNotifier.new,
 );
