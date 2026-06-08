@@ -91,7 +91,7 @@ class RsvpView extends ConsumerWidget {
                         child: Slider(
                           value: currentWpm.toDouble(),
                           min: 200,
-                          max: 1200,
+                          max: 2400,
                           label: '$currentWpm WPM',
                           activeColor: cs.primary,
                           inactiveColor: cs.surfaceContainerHighest,

@@ -12,7 +12,7 @@ import 'package:optiflow/features/vision_training/presentation/viewmodels/saccad
 
 const _kDefaultWpm = 300;
 const _kMinWpm = 200;
-const _kMaxWpm = 1200;
+const _kMaxWpm = 2400;
 const _kAssetPath = 'assets/texts/cuento_1.txt';
 
 // Sentinel privado para distinguir "no se pasó el parámetro" de null
@@ -110,12 +110,17 @@ class GuidedLinesNotifier extends Notifier<GuidedLinesState> {
 
   /// Called from GuidedLinesView via LayoutBuilder once the widget width is
   /// known.
-  void paginate(double maxWidth, TextStyle style) {
+  void paginate(
+    double maxWidth,
+    TextStyle style, {
+    TextScaler textScaler = TextScaler.noScaling,
+  }) {
     if (_rawText.isEmpty) return;
     final lines = paginateTextIntoLines(
       rawText: _rawText,
       maxWidth: maxWidth,
       style: style,
+      textScaler: textScaler,
     );
     state = state.copyWith(lines: lines, currentLineIndex: 0);
   }

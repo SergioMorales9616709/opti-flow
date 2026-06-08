@@ -110,6 +110,7 @@ lib/
 | 13   | Módulo 2: Motor de Textos (TextRepository) + Modo RSVP + MainDashboard     | ✅ Completado |
 | 14   | RSVP Pro: Chunking + ORP rendering + OrpTextDisplay + Roboto Mono          | ✅ Completado |
 | 15   | Módulo 2 Iter. 3: Modo Líneas Resaltadas (GuidedLines) + TextPainter paginador | ✅ Completado |
+| 16   | Módulo 2 Iter. 4: Modo Libro (BookMode) — doble columna + Page Flip estático | ✅ Completado |
 
 ---
 
@@ -166,3 +167,18 @@ Fecha: 2026-05-28
 - Persistencia: `exercise_type='speed_reading_guided_lines'`, `max_speed_ms=currentWpm`.
 - Dashboard: segunda tarjeta en sección "LECTURA VELOZ" → `GuidedLinesView`.
 Fecha: 2026-05-28
+
+## Módulo 2 — Lectura Veloz (Iteración 4) ✅
+
+`flutter analyze` reporta **0 issues**.
+
+**Modo Libro (BookMode):**
+- `BookModeNotifier` (Riverpod 2.x `Notifier`): mismo motor base que `GuidedLinesNotifier` — async loop con `_running`, timing por línea `(60000 ~/ wpm) * wordCount`, slider WPM 200–1200, mute, Práctica Libre con `ExerciseDuration` y auto-guardado/`AudioCue.success`. `paginate(columnWidth, style)` recibe el ancho de **una sola columna** (no el ancho completo de pantalla).
+- `BookModeView` (`ConsumerStatefulWidget`): vista sin scroll, renderizado 100% estático — sin `ListView` ni `ScrollController`.
+  - `LayoutBuilder` calcula `maxLinesPerPage = (alturaDisponible / kLineHeight).floor()` (`kLineHeight = 48.0`, fuente 24px) y `columnWidth = (anchoDisponible - kSpineWidth) / 2` (`kSpineWidth = 32.0`).
+  - **Page Flip estático:** `linesPerDoublePage = maxLinesPerPage * 2`, `doublePageIndex = currentLineIndex ~/ linesPerDoublePage`. La sublista `visibleLines` se reparte entre columna izquierda y derecha; el cambio de página doble es un rebuild instantáneo (sin animación de scroll) cuando el índice cruza el límite de página.
+  - El "lomo" del libro se dibuja con un `VerticalDivider` sutil (`outlineVariant`, opacidad 0.35) entre las dos `Expanded`.
+  - Línea activa: fuente 24px, peso w600, color `primary`, fondo `primary.withOpacity(0.08)`. Líneas inactivas: `onSurface.withOpacity(0.3)`, peso w400 — misma paleta que GuidedLines, ajustada al tamaño de columna angosta.
+- Persistencia: `exercise_type='speed_reading_book'`, `max_speed_ms=currentWpm`.
+- Dashboard: tercera tarjeta en sección "LECTURA VELOZ" → `BookModeView` (ícono `Icons.menu_book`).
+Fecha: 2026-06-07

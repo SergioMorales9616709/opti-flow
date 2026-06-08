@@ -1,43 +1,47 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:optiflow/features/speed_reading/presentation/viewmodels/guided_lines_viewmodel.dart';
+import 'package:optiflow/features/speed_reading/presentation/viewmodels/book_mode_viewmodel.dart';
 import 'package:optiflow/features/vision_training/presentation/viewmodels/saccadic_jumps_viewmodel.dart'
     show ExerciseDuration;
 
-const _kFontSize = 32.0;
+const _kFontSize = 24.0;
 
 // Line height expressed as a multiple of `fontSize`, applied via
 // `TextStyle.height` so Flutter reserves the full glyph box (including
 // descenders on letters like p/g/y and accents) instead of clipping it
-// inside an externally-forced row. `itemExtent` on the ListView — and the
-// page-flip math in `_flipToLine` — are derived from this value, never
-// hardcoded, so they always agree with what's physically on screen.
-const _kLineHeightMultiplier = 1.4;
+// inside an externally-forced box. The per-line height used for pagination
+// and the page-flip math is derived from this — never hardcoded — so the
+// two always agree with what's physically on screen.
+const _kLineHeightMultiplier = 2.0;
 const _kLineHeight = _kFontSize * _kLineHeightMultiplier;
 
-// Every horizontal inset between the LayoutBuilder's width and the Text
-// glyphs themselves — ListView padding + _LineTile margin + _LineTile
-// padding (each applied on both sides). `paginateTextIntoLines` must measure
-// against this *exact* width; otherwise lines that "fit" on paper wrap when
-// rendered, blowing past the strict `itemExtent` row height and overflowing.
-const _kListHorizontalPadding = 24.0;
-const _kTileHorizontalMargin = 4.0;
-const _kTileHorizontalPadding = 8.0;
+// Width reserved for the central "spine" — the gutter that keeps the two
+// columns from touching, with a subtle divider drawn through its middle.
+const _kSpineWidth = 32.0;
+
+const _kHorizontalPadding = 24.0;
+
+// Every horizontal inset between a column's width and its Text glyphs —
+// _BookColumn padding + _BookLineTile padding (each applied on both sides).
+// `paginateTextIntoLines` must measure against this *exact* width; otherwise
+// lines that "fit" on paper wrap when rendered, blowing past the strict
+// per-row height and overflowing the page.
+const _kColumnHorizontalPadding = 8.0;
+const _kLineHorizontalPadding = 8.0;
 const _kTextHorizontalChrome =
-    (_kListHorizontalPadding +
-        _kTileHorizontalMargin +
-        _kTileHorizontalPadding) *
-    2;
+    (_kColumnHorizontalPadding + _kLineHorizontalPadding) * 2;
 
 // The style used for pagination measurement, and the upper bound for
-// rendering. `_LineTile` renders the active line in `FontWeight.w600`
+// rendering. `_BookLineTile` renders the active line in `FontWeight.w600`
 // (bolder — and therefore wider — than the w400 used for inactive lines), so
 // measurement must use w600 too: a line that fits at its widest possible
 // render weight is guaranteed to fit at every weight, whether or not it is
 // the active line when paginated. Using w400 here let "fitting" lines wrap
-// the moment they became active and rendered bold, blowing past the strict
-// `itemExtent` row height and overflowing. The explicit `height` keeps the
-// measured line box in sync with the rendered one.
+// the moment they became active and rendered bold, overflowing their
+// fixed-height row. The explicit `height` keeps the measured line box in
+// sync with the rendered one.
 TextStyle _lineStyle(BuildContext context) => TextStyle(
   fontSize: _kFontSize,
   fontWeight: FontWeight.w600,
@@ -45,142 +49,144 @@ TextStyle _lineStyle(BuildContext context) => TextStyle(
   color: Theme.of(context).colorScheme.onSurface,
 );
 
-class GuidedLinesView extends ConsumerStatefulWidget {
-  const GuidedLinesView({super.key});
+class BookModeView extends ConsumerStatefulWidget {
+  const BookModeView({super.key});
 
   @override
-  ConsumerState<GuidedLinesView> createState() => _GuidedLinesViewState();
+  ConsumerState<BookModeView> createState() => _BookModeViewState();
 }
 
-class _GuidedLinesViewState extends ConsumerState<GuidedLinesView> {
-  final _scrollController = ScrollController();
+class _BookModeViewState extends ConsumerState<BookModeView> {
   bool _paginationScheduled = false;
 
   // The text width pagination last ran against. Re-paginating only on the
   // very first layout meant that resizing the window afterwards left the
   // existing lines measured for the *old* width — they'd wrap when rendered
-  // at the new (e.g. narrower) width, blowing past the strict `itemExtent`
-  // row height and overflowing. Tracking this lets us re-run pagination
-  // whenever the available width actually changes, not just once.
+  // into the new (e.g. narrower) columns, overflowing their fixed-height
+  // rows. Tracking this lets us re-run pagination whenever the available
+  // width actually changes, not just once.
   double? _paginatedTextWidth;
-
-  // Computed once per layout pass inside the LayoutBuilder below — counts
-  // only lines that fit *completely* in the viewport, so the page math here
-  // matches the strict `itemExtent: _kLineHeight` rows exactly.
-  int _maxLinesPerPage = 0;
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  /// "Page Flip": jumps instantly to the exact top offset of the page that
-  /// contains [index], instead of continuously scrolling to center the active
-  /// line. Because rows have a strict `itemExtent`, `targetPage * linesPerPage
-  /// * lineHeight` always lands the new line flush with the viewport's top
-  /// edge — the eye returns to the top of the screen, like flipping a page.
-  void _flipToLine(int index) {
-    if (!_scrollController.hasClients || _maxLinesPerPage <= 0) return;
-    final targetPage = index ~/ _maxLinesPerPage;
-    final exactOffset = (targetPage * _maxLinesPerPage * _kLineHeight).clamp(
-      0.0,
-      _scrollController.position.maxScrollExtent,
-    );
-    if (_scrollController.offset != exactOffset) {
-      _scrollController.jumpTo(exactOffset);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isLoaded = ref.watch(guidedLinesProvider.select((s) => s.isLoaded));
-    final lines = ref.watch(guidedLinesProvider.select((s) => s.lines));
-    final isPlaying = ref.watch(guidedLinesProvider.select((s) => s.isPlaying));
-    final isMuted = ref.watch(guidedLinesProvider.select((s) => s.isMuted));
-    final currentWpm = ref.watch(
-      guidedLinesProvider.select((s) => s.currentWpm),
-    );
+    final isLoaded = ref.watch(bookModeProvider.select((s) => s.isLoaded));
+    final lines = ref.watch(bookModeProvider.select((s) => s.lines));
+    final isPlaying = ref.watch(bookModeProvider.select((s) => s.isPlaying));
+    final isMuted = ref.watch(bookModeProvider.select((s) => s.isMuted));
+    final currentWpm = ref.watch(bookModeProvider.select((s) => s.currentWpm));
     final currentLineIndex = ref.watch(
-      guidedLinesProvider.select((s) => s.currentLineIndex),
+      bookModeProvider.select((s) => s.currentLineIndex),
     );
     final selectedDuration = ref.watch(
-      guidedLinesProvider.select((s) => s.selectedDuration),
+      bookModeProvider.select((s) => s.selectedDuration),
     );
     final timeLeftSeconds = ref.watch(
-      guidedLinesProvider.select((s) => s.timeLeftSeconds),
+      bookModeProvider.select((s) => s.timeLeftSeconds),
     );
 
-    final notifier = ref.read(guidedLinesProvider.notifier);
+    final notifier = ref.read(bookModeProvider.notifier);
     final progress = lines.isEmpty ? 0.0 : currentLineIndex / lines.length;
-
-    // Page-flip whenever the active line crosses into a new page.
-    ref.listen<int>(
-      guidedLinesProvider.select((s) => s.currentLineIndex),
-      (_, index) => _flipToLine(index),
-    );
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            // ── Line list area ─────────────────────────────────────────────
+            // ── Book area ──────────────────────────────────────────────────
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  // Strict count of lines that fit completely in the
-                  // viewport — drives the page-flip math in `_flipToLine`.
-                  _maxLinesPerPage = (constraints.maxHeight / _kLineHeight)
-                      .floor();
-                  final textWidth =
-                      constraints.maxWidth - _kTextHorizontalChrome;
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: _kHorizontalPadding,
+                ),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final maxLinesPerPage =
+                        (constraints.maxHeight / _kLineHeight).floor();
+                    final columnWidth =
+                        (constraints.maxWidth - _kSpineWidth) / 2;
+                    final textWidth = columnWidth - _kTextHorizontalChrome;
 
-                  // (Re)paginate whenever the measured text width hasn't
-                  // been seen yet — first layout, or a resize that changed
-                  // the width enough to invalidate the existing lines.
-                  final widthChanged =
-                      _paginatedTextWidth == null ||
-                      (textWidth - _paginatedTextWidth!).abs() > 0.5;
-                  if (isLoaded && widthChanged && !_paginationScheduled) {
-                    _paginationScheduled = true;
-                    WidgetsBinding.instance.addPostFrameCallback((_) {
-                      _paginationScheduled = false;
-                      if (mounted) {
-                        _paginatedTextWidth = textWidth;
-                        notifier.paginate(
-                          textWidth,
-                          _lineStyle(context),
-                          textScaler: MediaQuery.textScalerOf(context),
-                        );
-                      }
-                    });
-                  }
+                    // (Re)paginate whenever the measured text width hasn't
+                    // been seen yet — first layout, or a resize that changed
+                    // the column width enough to invalidate existing lines.
+                    final widthChanged =
+                        _paginatedTextWidth == null ||
+                        (textWidth - _paginatedTextWidth!).abs() > 0.5;
+                    if (isLoaded && widthChanged && !_paginationScheduled) {
+                      _paginationScheduled = true;
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _paginationScheduled = false;
+                        if (mounted) {
+                          _paginatedTextWidth = textWidth;
+                          notifier.paginate(
+                            textWidth,
+                            _lineStyle(context),
+                            textScaler: MediaQuery.textScalerOf(context),
+                          );
+                        }
+                      });
+                    }
 
-                  // While re-pagination is pending, `lines` still holds
-                  // entries measured for the *previous* width — rendering
-                  // them against the new layout constraints is exactly what
-                  // overflowed. Show the loading state instead until
-                  // pagination catches up and the widths agree again.
-                  if (!isLoaded || lines.isEmpty || widthChanged) {
-                    return Center(
-                      child: CircularProgressIndicator(color: cs.primary),
+                    // While re-pagination is pending, `lines` still holds
+                    // entries measured for the *previous* width — rendering
+                    // them against the new layout constraints is exactly
+                    // what overflowed. Show the loading state instead until
+                    // pagination catches up and the widths agree again.
+                    if (!isLoaded ||
+                        lines.isEmpty ||
+                        maxLinesPerPage <= 0 ||
+                        widthChanged) {
+                      return Center(
+                        child: CircularProgressIndicator(color: cs.primary),
+                      );
+                    }
+
+                    // "Page Flip": derive which double-page is on screen
+                    // straight from currentLineIndex — no scrolling, just a
+                    // static rebuild when the index crosses a page boundary.
+                    final linesPerDoublePage = maxLinesPerPage * 2;
+                    final doublePageIndex =
+                        currentLineIndex ~/ linesPerDoublePage;
+                    final startIndex = doublePageIndex * linesPerDoublePage;
+                    final endIndex = math.min(
+                      startIndex + linesPerDoublePage,
+                      lines.length,
                     );
-                  }
+                    final visibleLines = lines.sublist(startIndex, endIndex);
 
-                  return ListView.builder(
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: _kListHorizontalPadding,
-                    ),
-                    itemExtent: _kLineHeight,
-                    itemCount: lines.length,
-                    itemBuilder: (context, index) {
-                      final isActive = index == currentLineIndex;
-                      return _LineTile(text: lines[index], isActive: isActive);
-                    },
-                  );
-                },
+                    final leftCount = math.min(
+                      maxLinesPerPage,
+                      visibleLines.length,
+                    );
+                    final leftLines = visibleLines.sublist(0, leftCount);
+                    final rightLines = visibleLines.sublist(leftCount);
+
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Expanded(
+                          child: _BookColumn(
+                            lines: leftLines,
+                            startGlobalIndex: startIndex,
+                            currentLineIndex: currentLineIndex,
+                          ),
+                        ),
+                        VerticalDivider(
+                          width: _kSpineWidth,
+                          thickness: 1,
+                          color: cs.outlineVariant.withValues(alpha: 0.35),
+                        ),
+                        Expanded(
+                          child: _BookColumn(
+                            lines: rightLines,
+                            startGlobalIndex: startIndex + leftCount,
+                            currentLineIndex: currentLineIndex,
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
 
@@ -342,23 +348,57 @@ class _GuidedLinesViewState extends ConsumerState<GuidedLinesView> {
 }
 
 // ---------------------------------------------------------------------------
-// Line tile — active line highlighted, others dimmed. Vertical chrome is
-// intentionally absent: the row's height comes naturally from
-// `TextStyle.height` (= `_kLineHeight`, matching `itemExtent`), not from
-// padding/margin — this is what lets Flutter reserve room for
-// descenders/accents instead of clipping them against a forced row height.
+// Book column — renders a static stack of fixed-height line rows
+// ---------------------------------------------------------------------------
+
+class _BookColumn extends StatelessWidget {
+  const _BookColumn({
+    required this.lines,
+    required this.startGlobalIndex,
+    required this.currentLineIndex,
+  });
+
+  final List<String> lines;
+  final int startGlobalIndex;
+  final int currentLineIndex;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: _kColumnHorizontalPadding,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < lines.length; i++)
+            _BookLineTile(
+              text: lines[i],
+              isActive: startGlobalIndex + i == currentLineIndex,
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Line tile — active line highlighted, others dimmed. The row's height comes
+// naturally from `TextStyle.height` (= `_kLineHeight`), not from a forced
+// box — this is what lets Flutter reserve room for descenders/accents
+// instead of clipping them.
 //
 // `maxLines: 1` + `overflow: ellipsis` is the actual overflow guard: even
 // though `paginateTextIntoLines` measures each string to fit `_kFontSize` at
-// the list's text width, a single word that's wider than the row on its own
-// can't be split — pagination has to place it alone, and the renderer would
-// otherwise wrap it onto a second line, doubling that row's height past the
-// strict `itemExtent`. Forcing one line guarantees every row is exactly
-// `_kLineHeight` tall no matter what the text measures to.
+// the column's text width, a single word that's wider than the column on its
+// own can't be split — pagination has to place it alone, and the renderer
+// would otherwise wrap it onto a second line, doubling that row's height and
+// busting the strict per-page line count. Forcing one line guarantees every
+// row is exactly `_kLineHeight` tall no matter what the text measures to.
 // ---------------------------------------------------------------------------
 
-class _LineTile extends StatelessWidget {
-  const _LineTile({required this.text, required this.isActive});
+class _BookLineTile extends StatelessWidget {
+  const _BookLineTile({required this.text, required this.isActive});
 
   final String text;
   final bool isActive;
@@ -366,16 +406,15 @@ class _LineTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
+    return Container(
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(horizontal: _kLineHorizontalPadding),
       decoration: BoxDecoration(
         color: isActive
             ? cs.primary.withValues(alpha: 0.08)
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: BorderRadius.circular(4),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: _kTileHorizontalPadding),
-      margin: const EdgeInsets.symmetric(horizontal: _kTileHorizontalMargin),
       child: Text(
         text,
         maxLines: 1,
@@ -384,7 +423,7 @@ class _LineTile extends StatelessWidget {
           fontSize: _kFontSize,
           fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
           height: _kLineHeightMultiplier,
-          color: isActive ? cs.primary : cs.onSurface.withValues(alpha: 0.15),
+          color: isActive ? cs.primary : cs.onSurface.withValues(alpha: 0.3),
         ),
       ),
     );
